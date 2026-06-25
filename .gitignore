@@ -28,3 +28,4 @@ data/eval/
 # OS
 .DS_Store
 Thumbs.db
+saveState.zip
