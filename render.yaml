@@ -1,0 +1,64 @@
+# render.yaml — Render Blueprint
+# Deploy via: render.com → New → Blueprint → connect repo
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: healthhub-rag
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+
+    # ── Instance ──────────────────────────────────────────────
+    # Standard needed: sentence-transformers loads ~400MB model into RAM
+    plan: standard
+
+    # ── Network ───────────────────────────────────────────────
+    healthCheckPath: /health
+
+    # ── Auto-deploy on git push ───────────────────────────────
+    autoDeploy: true
+    branch: main
+
+    # ── Environment variables ─────────────────────────────────
+    # Secret values (API keys) must be set manually in Render dashboard
+    # after first deploy: Service → Environment → Add Environment Variable
+    envVars:
+
+      # ── Required — set in Render dashboard (never commit values) ──
+      - key: ANTHROPIC_API_KEY
+        sync: false          # sync:false = Render will prompt you for the value
+
+      # ── Optional — set in dashboard if you re-scrape ──────────
+      - key: FIRECRAWL_API_KEY
+        sync: false
+
+      # ── App config — safe to hardcode here ────────────────────
+      - key: CLINIC_NAME
+        value: HealthHub by Al-Futtaim
+
+      - key: CLINIC_URL
+        value: https://www.healthhubalfuttaim.com
+
+      - key: ENVIRONMENT
+        value: production
+
+      - key: DB_PATH
+        value: data/db/healthhub.db
+
+      - key: CHROMA_PATH
+        value: data/chroma
+
+      # ── Silence telemetry noise ────────────────────────────────
+      - key: ANONYMIZED_TELEMETRY
+        value: "false"
+
+      - key: CHROMA_TELEMETRY
+        value: "false"
+
+      # ── Python ────────────────────────────────────────────────
+      - key: PYTHONDONTWRITEBYTECODE
+        value: "1"
+
+      - key: PYTHONUNBUFFERED
+        value: "1"

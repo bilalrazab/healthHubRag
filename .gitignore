@@ -16,9 +16,7 @@ build/
 
 # Data — don't commit large files
 data/raw/
-data/chroma/
-data/db/*.db
-
+data/eval/
 # Keep structured + simulated (they're source of truth, small)
 # data/structured/ → commit
 # data/simulated/  → commit

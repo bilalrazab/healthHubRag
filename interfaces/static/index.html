@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HealthHub — Patient Assistant</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<style>
+  :root {
+    --bg:        #0a0f1a;
+    --surface:   #111827;
+    --surface2:  #1a2436;
+    --border:    #1e3048;
+    --teal:      #00d4b8;
+    --teal-dim:  rgba(0,212,184,0.12);
+    --teal-glow: rgba(0,212,184,0.25);
+    --text:      #e2eaf5;
+    --text-dim:  #7a93b2;
+    --text-muted:#3d5a7a;
+    --green:     #22c55e;
+    --amber:     #f59e0b;
+    --red:       #f43f5e;
+    --blue:      #60a5fa;
+    --sans:      -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --mono:      'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; overflow:hidden; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── HEADER ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    height: 52px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    gap: 12px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .logo-icon {
+    width: 28px; height: 28px;
+    background: var(--teal-dim);
+    border: 1px solid var(--teal);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .logo-sub {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-muted);
+    margin-left: 2px;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn-ghost:hover {
+    border-color: var(--teal);
+    color: var(--teal);
+  }
+  .btn-ghost.active {
+    background: var(--teal-dim);
+    border-color: var(--teal);
+    color: var(--teal);
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── CHAT PANEL ── */
+  .chat-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  /* ── MESSAGES ── */
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    scroll-behavior: smooth;
+  }
+
+  #messages::-webkit-scrollbar { width: 5px; }
+  #messages::-webkit-scrollbar-track { background: transparent; }
+  #messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .message {
+    display: flex;
+    gap: 10px;
+    max-width: 760px;
+    animation: fadeUp 0.2s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity:0; transform: translateY(6px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  .message.user  { align-self: flex-end;   flex-direction: row-reverse; }
+  .message.bot   { align-self: flex-start; }
+
+  .avatar {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .user .avatar  { background: var(--teal-dim); border: 1px solid var(--teal); }
+  .bot  .avatar  { background: var(--surface2); border: 1px solid var(--border); }
+
+  .bubble {
+    padding: 12px 16px;
+    border-radius: 12px;
+    max-width: calc(100% - 44px);
+    line-height: 1.6;
+    font-size: 14px;
+  }
+
+  .user .bubble {
+    background: var(--teal-dim);
+    border: 1px solid rgba(0,212,184,0.25);
+    border-bottom-right-radius: 3px;
+    color: var(--text);
+  }
+
+  .bot .bubble {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 3px;
+    color: var(--text);
+  }
+
+  /* Markdown rendering inside bot bubbles */
+  .bubble p  { margin-bottom: 8px; }
+  .bubble p:last-child { margin-bottom: 0; }
+  .bubble strong { color: var(--text); font-weight: 600; }
+  .bubble em { color: var(--text-dim); }
+  .bubble ul, .bubble ol {
+    padding-left: 18px;
+    margin: 6px 0;
+  }
+  .bubble li { margin: 3px 0; line-height: 1.5; }
+  .bubble h1, .bubble h2, .bubble h3 {
+    color: var(--teal);
+    margin: 10px 0 6px;
+    font-size: 14px;
+  }
+  .bubble a { color: var(--teal); text-decoration: none; }
+  .bubble a:hover { text-decoration: underline; }
+  .bubble code {
+    background: rgba(0,0,0,0.3);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--teal);
+  }
+  .bubble pre {
+    background: rgba(0,0,0,0.3);
+    padding: 10px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 8px 0;
+  }
+  .bubble pre code {
+    background: none;
+    padding: 0;
+    color: var(--text-dim);
+  }
+  .bubble blockquote {
+    border-left: 3px solid var(--teal);
+    padding-left: 10px;
+    color: var(--text-dim);
+    margin: 6px 0;
+  }
+  .bubble hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 10px 0;
+  }
+
+  /* Intent badge */
+  .intent-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-family: var(--mono);
+    padding: 2px 7px;
+    border-radius: 4px;
+    margin-top: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* Thinking indicator */
+  .thinking .bubble {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    padding: 14px 18px;
+  }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--teal);
+    animation: pulse 1.2s ease-in-out infinite;
+    opacity: 0.4;
+  }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pulse {
+    0%,100% { opacity:0.3; transform:scale(0.9); }
+    50%      { opacity:1;   transform:scale(1.1); }
+  }
+
+  /* ── INPUT AREA ── */
+  .input-area {
+    padding: 12px 20px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    max-width: 760px;
+  }
+
+  #messageInput {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    resize: none;
+    outline: none;
+    min-height: 42px;
+    max-height: 120px;
+    line-height: 1.5;
+    transition: border-color 0.15s;
+  }
+  #messageInput:focus { border-color: var(--teal); }
+  #messageInput::placeholder { color: var(--text-muted); }
+
+  #sendBtn {
+    background: var(--teal);
+    border: none;
+    border-radius: 10px;
+    width: 42px; height: 42px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.15s, transform 0.1s;
+    flex-shrink: 0;
+  }
+  #sendBtn:hover  { opacity: 0.85; }
+  #sendBtn:active { transform: scale(0.95); }
+  #sendBtn:disabled { opacity: 0.4; cursor: default; }
+  #sendBtn svg { width:18px; height:18px; fill:#0a0f1a; }
+
+  /* ── DEBUG PANEL ── */
+  .debug-panel {
+    width: 340px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    overflow-y: auto;
+    display: none;
+    flex-direction: column;
+  }
+  .debug-panel.open { display: flex; }
+  .debug-panel::-webkit-scrollbar { width: 4px; }
+  .debug-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius:3px; }
+
+  .debug-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--teal);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .debug-empty {
+    padding: 32px 20px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.8;
+  }
+
+  .debug-section {
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+  }
+
+  .debug-section-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--teal);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .debug-section-title::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--teal);
+    flex-shrink: 0;
+  }
+
+  .debug-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 5px;
+    gap: 8px;
+  }
+  .debug-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .debug-value {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    text-align: right;
+    word-break: break-all;
+  }
+  .debug-value.highlight { color: var(--text); font-weight: 700; }
+  .debug-value.good  { color: var(--green); }
+  .debug-value.warn  { color: var(--amber); }
+  .debug-value.bad   { color: var(--red); }
+  .debug-value.teal  { color: var(--teal); }
+  .debug-value.blue  { color: var(--blue); }
+
+  .conf-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 4px 0 8px;
+    overflow: hidden;
+  }
+  .conf-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  .route-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: rgba(96,165,250,0.1);
+    border: 1px solid rgba(96,165,250,0.2);
+    color: var(--blue);
+    margin-top: 2px;
+    word-break: break-all;
+  }
+
+  .cost-display {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--green);
+    margin: 4px 0;
+  }
+
+  .latency-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+  .latency-chip {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+  .latency-chip span { color: var(--amber); font-weight: 700; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 640px) {
+    .debug-panel { width: 100%; position: absolute; top:52px; right:0; bottom:0; z-index:50; }
+    .logo-sub { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🏥</div>
+    <div>
+      HealthHub
+      <span class="logo-sub">by Al-Futtaim · Patient Assistant</span>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-ghost" id="clearBtn" title="Clear conversation">↺ Clear</button>
+    <button class="btn-ghost" id="debugBtn" title="Toggle debug panel">⚙ Debug</button>
+  </div>
+</header>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- CHAT -->
+  <div class="chat-panel">
+    <div id="messages"></div>
+    <div class="input-area">
+      <div class="input-row">
+        <textarea
+          id="messageInput"
+          placeholder="Ask about doctors, branches, insurance, appointments…"
+          rows="1"
+          autocomplete="off"
+          spellcheck="true"
+        ></textarea>
+        <button id="sendBtn" title="Send (Enter)">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEBUG PANEL -->
+  <div class="debug-panel" id="debugPanel">
+    <div class="debug-header">
+      <span>⚙ Pipeline Trace</span>
+      <span id="turnCounter" style="color:var(--text-muted);font-size:10px;">Turn —</span>
+    </div>
+    <div id="debugContent">
+      <div class="debug-empty">
+        Send a message to see<br>the full pipeline trace.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────
+const API_BASE   = window.location.origin;
+const SESSION_ID = 'session_' + Math.random().toString(36).slice(2, 10);
+let debugMode    = false;
+let turnCount    = 0;
+let isSending    = false;
+
+// marked.js — render markdown
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+  mangle: false,
+  headerIds: false,
+});
+
+// ── DOM refs ──────────────────────────────────────────────────
+const messagesEl   = document.getElementById('messages');
+const inputEl      = document.getElementById('messageInput');
+const sendBtn      = document.getElementById('sendBtn');
+const debugPanel   = document.getElementById('debugPanel');
+const debugBtn     = document.getElementById('debugBtn');
+const debugContent = document.getElementById('debugContent');
+const clearBtn     = document.getElementById('clearBtn');
+const turnCounter  = document.getElementById('turnCounter');
+
+// ── Initial greeting ──────────────────────────────────────────
+appendBot(
+  "👋 **Hello! Welcome to HealthHub by Al-Futtaim.**\n\n" +
+  "I'm your virtual clinic assistant. I can help you with:\n" +
+  "• Finding a doctor or specialist\n" +
+  "• Clinic locations, hours & contact details\n" +
+  "• Insurance coverage queries\n" +
+  "• Health packages & prices\n" +
+  "• Appointment booking guidance\n\n" +
+  "How can I help you today?",
+  "greeting"
+);
+
+// ── Toggle debug panel ────────────────────────────────────────
+debugBtn.addEventListener('click', () => {
+  debugMode = !debugMode;
+  debugPanel.classList.toggle('open', debugMode);
+  debugBtn.classList.toggle('active', debugMode);
+  debugBtn.textContent = debugMode ? '⚙ Debug ON' : '⚙ Debug';
+});
+
+// ── Clear conversation ────────────────────────────────────────
+clearBtn.addEventListener('click', async () => {
+  await fetch(`${API_BASE}/session/clear?session_id=${SESSION_ID}`);
+  messagesEl.innerHTML = '';
+  turnCount = 0;
+  turnCounter.textContent = 'Turn —';
+  debugContent.innerHTML = '<div class="debug-empty">Send a message to see<br>the full pipeline trace.</div>';
+  appendBot(
+    "Conversation cleared. How can I help you?",
+    "out_of_scope"
+  );
+});
+
+// ── Auto-resize textarea ──────────────────────────────────────
+inputEl.addEventListener('input', () => {
+  inputEl.style.height = 'auto';
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+});
+
+// ── Send on Enter (Shift+Enter for newline) ───────────────────
+inputEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+sendBtn.addEventListener('click', sendMessage);
+
+// ── Send message ──────────────────────────────────────────────
+async function sendMessage() {
+  const text = inputEl.value.trim();
+  if (!text || isSending) return;
+
+  isSending = true;
+  sendBtn.disabled = true;
+  inputEl.value = '';
+  inputEl.style.height = 'auto';
+
+  appendUser(text);
+  const thinkingEl = appendThinking();
+
+  try {
+    const res = await fetch(`${API_BASE}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message:    text,
+        session_id: SESSION_ID,
+        debug:      debugMode,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Server error ${res.status}: ${err}`);
+    }
+
+    const data = await res.json();
+    thinkingEl.remove();
+    turnCount++;
+    appendBot(data.reply, data.intent);
+
+    if (debugMode && data.debug) {
+      renderDebug(data.debug, turnCount);
+    }
+
+  } catch (err) {
+    thinkingEl.remove();
+    appendBot(
+      `⚠️ Something went wrong: ${err.message}\n\nPlease try again or contact us on +971 800 2344.`,
+      "error"
+    );
+  }
+
+  isSending = false;
+  sendBtn.disabled = false;
+  inputEl.focus();
+}
+
+// ── Append messages ───────────────────────────────────────────
+function appendUser(text) {
+  const el = document.createElement('div');
+  el.className = 'message user';
+  el.innerHTML = `
+    <div class="avatar">👤</div>
+    <div class="bubble">${escapeHtml(text)}</div>
+  `;
+  messagesEl.appendChild(el);
+  scrollToBottom();
+}
+
+function appendBot(mdText, intent) {
+  const el = document.createElement('div');
+  el.className = 'message bot';
+  const html = marked.parse(mdText || '');
+  const badge = intent && intent !== 'greeting' && intent !== 'error'
+    ? `<div class="intent-badge">${intent}</div>` : '';
+  el.innerHTML = `
+    <div class="avatar">🏥</div>
+    <div>
+      <div class="bubble">${html}</div>
+      ${badge}
+    </div>
+  `;
+  messagesEl.appendChild(el);
+  scrollToBottom();
+  return el;
+}
+
+function appendThinking() {
+  const el = document.createElement('div');
+  el.className = 'message bot thinking';
+  el.innerHTML = `
+    <div class="avatar">🏥</div>
+    <div class="bubble">
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+    </div>
+  `;
+  messagesEl.appendChild(el);
+  scrollToBottom();
+  return el;
+}
+
+function scrollToBottom() {
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+// ── Render debug panel ────────────────────────────────────────
+function renderDebug(d, turn) {
+  turnCounter.textContent = `Turn #${turn}`;
+
+  // Confidence colour
+  const confColor = d.confidence >= 0.8 ? 'good' : d.confidence >= 0.5 ? 'warn' : 'bad';
+  const confPct   = Math.round(d.confidence * 100);
+  const confBarColor = d.confidence >= 0.8 ? '#22c55e' : d.confidence >= 0.5 ? '#f59e0b' : '#f43f5e';
+
+  // Entity extraction
+  const entities = [
+    d.branch       && `branch: <span style="color:var(--teal)">${d.branch}</span>`,
+    d.speciality   && `spec: <span style="color:var(--blue)">${d.speciality}</span>`,
+    d.doctor_name  && `doctor: <span style="color:var(--amber)">${d.doctor_name}</span>`,
+    d.insurance    && `insurance: <span style="color:var(--green)">${d.insurance}</span>`,
+  ].filter(Boolean);
+
+  // Retrieval summary
+  const totalChunks = d.rrf_chunks || (d.vec_chunks + d.bm25_chunks);
+  const sqlHit  = d.sql_rows  > 0 ? 'good' : 'warn';
+  const vecHit  = d.vec_chunks > 0 ? 'good' : 'warn';
+  const bm25Hit = d.bm25_chunks> 0 ? 'good' : 'warn';
+
+  // Cost colour
+  const costColor = d.cost_usd < 0.005 ? 'good' : d.cost_usd < 0.01 ? 'warn' : 'bad';
+  const costStr   = d.cost_usd < 0.0001 ? '$0.0000' : `$${d.cost_usd.toFixed(4)}`;
+
+  const fastPath  = d.was_fast_path;
+  const apiCalls  = fastPath ? 0 : 2;
+
+  debugContent.innerHTML = `
+
+    <!-- ① Intent -->
+    <div class="debug-section">
+      <div class="debug-section-title">① Intent Classification</div>
+      <div class="debug-row">
+        <span class="debug-label">Intent</span>
+        <span class="debug-value teal highlight">${d.intent}</span>
+      </div>
+      <div class="debug-row">
+        <span class="debug-label">Confidence</span>
+        <span class="debug-value ${confColor} highlight">${confPct}%</span>
+      </div>
+      <div class="conf-bar">
+        <div class="conf-fill" style="width:${confPct}%;background:${confBarColor}"></div>
+      </div>
+      ${entities.length > 0 ? `
+        <div style="margin-bottom:4px">
+          ${entities.map(e => `<div class="debug-row"><span class="debug-label">Entity</span><span class="debug-value" style="font-family:var(--mono);font-size:10px">${e}</span></div>`).join('')}
+        </div>
+      ` : `<div class="debug-row"><span class="debug-label">Entities</span><span class="debug-value" style="color:var(--text-muted)">none extracted</span></div>`}
+      <div class="debug-row">
+        <span class="debug-label">Method</span>
+        <span class="debug-value ${fastPath ? 'good' : 'blue'}">${fastPath ? 'fast-path ($0)' : 'Claude API'}</span>
+      </div>
+    </div>
+
+    <!-- ② Route -->
+    <div class="debug-section">
+      <div class="debug-section-title">② Retrieval Route</div>
+      <div class="route-tag">${d.route_taken || '—'}</div>
+    </div>
+
+    <!-- ③ Retrieval -->
+    <div class="debug-section">
+      <div class="debug-section-title">③ Retrieval Results</div>
+      <div class="debug-row">
+        <span class="debug-label">SQL rows</span>
+        <span class="debug-value ${sqlHit} highlight">${d.sql_rows}</span>
+      </div>
+      <div class="debug-row">
+        <span class="debug-label">Vector chunks</span>
+        <span class="debug-value ${vecHit}">${d.vec_chunks}</span>
+      </div>
+      <div class="debug-row">
+        <span class="debug-label">BM25 chunks</span>
+        <span class="debug-value ${bm25Hit}">${d.bm25_chunks}</span>
+      </div>
+      <div class="debug-row">
+        <span class="debug-label">RRF output</span>
+        <span class="debug-value highlight">${d.rrf_chunks}</span>
+      </div>
+      <div class="debug-row">
+        <span class="debug-label">Context sent</span>
+        <span class="debug-value">${d.context_chars.toLocaleString()} chars</span>
+      </div>
+    </div>
+
+    <!-- ④ LLM -->
+    <div class="debug-section">
+      <div class="debug-section-title">④ LLM Response</div>
+      ${fastPath ? `<div class="debug-row"><span class="debug-label">LLM called</span><span class="debug-value good">No — $0</span></div>` : `
+        <div class="debug-row">
+          <span class="debug-label">Tokens in</span>
+          <span class="debug-value warn">${d.tokens_in.toLocaleString()}</span>
+        </div>
+        <div class="debug-row">
+          <span class="debug-label">Tokens out</span>
+          <span class="debug-value warn">${d.tokens_out.toLocaleString()}</span>
+        </div>
+        <div class="debug-row">
+          <span class="debug-label">Total</span>
+          <span class="debug-value highlight">${(d.tokens_in + d.tokens_out).toLocaleString()} tokens</span>
+        </div>
+      `}
+    </div>
+
+    <!-- ⑤ Cost & Speed -->
+    <div class="debug-section">
+      <div class="debug-section-title">⑤ Cost & Latency</div>
+      <div class="cost-display">${costStr}</div>
+      <div class="debug-row">
+        <span class="debug-label">API calls</span>
+        <span class="debug-value">${apiCalls}</span>
+      </div>
+      <div class="latency-row">
+        <div class="latency-chip">Total <span>${Math.round(d.total_ms)}ms</span></div>
+        ${d.tokens_in > 0 ? `<div class="latency-chip">LLM <span>~${Math.round(d.total_ms * 0.8)}ms</span></div>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+// ── Utilities ─────────────────────────────────────────────────
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.appendChild(document.createTextNode(str));
+  return d.innerHTML;
+}
+
+// Auto-focus input
+inputEl.focus();
+</script>
+</body>
+</html>
