@@ -11,7 +11,7 @@ services:
 
     # ── Instance ──────────────────────────────────────────────
     # Standard needed: sentence-transformers loads ~400MB model into RAM
-    plan: standard
+    plan: free
 
     # ── Network ───────────────────────────────────────────────
     healthCheckPath: /health
