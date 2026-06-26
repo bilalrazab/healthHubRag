@@ -26,7 +26,7 @@ import sys
 #   local:  D:/HealthHubRag/interfaces/api.py  → D:/HealthHubRag
 #   Docker: /app/interfaces/api.py             → /app
 ROOT_DIR   = Path(__file__).resolve().parent.parent
-STATIC_DIR = ROOT_DIR / "static"
+STATIC_DIR = ROOT_DIR / "interfaces" / "static"   # FIX: was ROOT_DIR / "static"
 
 sys.path.insert(0, str(ROOT_DIR))
 
