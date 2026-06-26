@@ -3,14 +3,9 @@ interfaces/api.py
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 FastAPI backend for HealthHub RAG.
 
-Endpoints:
-  POST /chat          — send a message, get reply + trace
-  GET  /session/clear — clear a session
-  GET  /health        — health check for Render
-  GET  /              — serves the web UI (static/index.html)
-
-CORS enabled for demo/testing.
-Session ID comes from the client (cookie or header).
+Fix: STATIC_DIR now uses Path(__file__).resolve() so the
+absolute path is always correct regardless of working
+directory or Docker WORKDIR setting.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
 
@@ -18,14 +13,22 @@ import logging
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Resolve project root from this file's absolute location.
+# Works correctly in every environment:
+#   local:  D:/HealthHubRag/interfaces/api.py  → D:/HealthHubRag
+#   Docker: /app/interfaces/api.py             → /app
+ROOT_DIR   = Path(__file__).resolve().parent.parent
+STATIC_DIR = ROOT_DIR / "static"
+
+sys.path.insert(0, str(ROOT_DIR))
 
 from chatbot.bot     import handle_message
 from chatbot.session import clear as session_clear
@@ -36,13 +39,16 @@ logging.basicConfig(
 )
 log = logging.getLogger("api")
 
+# Log paths at startup — visible in Render logs, useful for debugging
+log.info("ROOT_DIR:   %s", ROOT_DIR)
+log.info("STATIC_DIR: %s  (exists=%s)", STATIC_DIR, STATIC_DIR.exists())
+
 app = FastAPI(
     title="HealthHub RAG API",
     description="Multi-branch healthcare RAG system for HealthHub by Al-Futtaim",
     version="1.0.0",
 )
 
-# CORS — open for demo; tighten to your domain in production
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -50,44 +56,46 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve static files (the web UI)
-STATIC_DIR = Path(__file__).parent.parent / "static"
+# Mount static files — always use the absolute resolved path
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+    log.info("Static files mounted OK")
+else:
+    log.error("STATIC_DIR not found — UI will not load. Expected: %s", STATIC_DIR)
 
 
 # ── Request / Response models ──────────────────────────────────
 
 class ChatRequest(BaseModel):
     message:    str
-    session_id: str = "web-default"
+    session_id: str  = "web-default"
     debug:      bool = False
 
 
 class DebugInfo(BaseModel):
-    intent:      str
-    confidence:  float
-    branch:      str | None
-    speciality:  str | None
-    doctor_name: str | None
-    insurance:   str | None
-    route_taken: str
-    sql_rows:    int
-    vec_chunks:  int
-    bm25_chunks: int
-    rrf_chunks:  int
+    intent:        str
+    confidence:    float
+    branch:        str | None
+    speciality:    str | None
+    doctor_name:   str | None
+    insurance:     str | None
+    route_taken:   str
+    sql_rows:      int
+    vec_chunks:    int
+    bm25_chunks:   int
+    rrf_chunks:    int
     context_chars: int
-    tokens_in:   int
-    tokens_out:  int
-    cost_usd:    float
-    total_ms:    float
+    tokens_in:     int
+    tokens_out:    int
+    cost_usd:      float
+    total_ms:      float
     was_fast_path: bool
 
 
 class ChatResponse(BaseModel):
-    reply:   str
-    intent:  str
-    debug:   DebugInfo | None = None
+    reply:  str
+    intent: str
+    debug:  DebugInfo | None = None
 
 
 # ── Endpoints ──────────────────────────────────────────────────
@@ -98,22 +106,32 @@ async def root():
     index = STATIC_DIR / "index.html"
     if index.exists():
         return HTMLResponse(content=index.read_text(encoding="utf-8"))
-    return HTMLResponse(content="<h1>HealthHub RAG API</h1><p>UI not found.</p>")
+    # Detailed error so it's clear what path was looked up
+    return HTMLResponse(
+        content=(
+            f"<h2>UI not found</h2>"
+            f"<p>Expected: <code>{index}</code></p>"
+            f"<p>STATIC_DIR exists: <code>{STATIC_DIR.exists()}</code></p>"
+            f"<p>Files in ROOT_DIR: <code>{list(ROOT_DIR.iterdir())}</code></p>"
+        ),
+        status_code=404,
+    )
 
 
 @app.get("/health")
 async def health():
-    """Render health check — must return 200."""
-    return {"status": "ok", "service": "healthhub-rag"}
+    """Render health check."""
+    return {
+        "status":      "ok",
+        "service":     "healthhub-rag",
+        "static_dir":  str(STATIC_DIR),
+        "static_ok":   STATIC_DIR.exists(),
+        "index_ok":    (STATIC_DIR / "index.html").exists(),
+    }
 
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
-    """
-    Main chat endpoint.
-    Calls handle_message() and formats the PipelineTrace
-    into a flat DebugInfo object for the frontend.
-    """
     log.info("Chat | session=%s | msg=%s", req.session_id[:8], req.message[:60])
 
     result = handle_message(
@@ -155,7 +173,6 @@ async def chat(req: ChatRequest):
 
 @app.get("/session/clear")
 async def clear_session(session_id: str = "web-default"):
-    """Clear a session's conversation history."""
     session_clear(session_id)
     log.info("Session cleared: %s", session_id[:8])
     return {"status": "cleared", "session_id": session_id}
