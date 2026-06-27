@@ -178,6 +178,7 @@ def handle_message(
                     "Gently redirect the patient to ask about HealthHub."
         )
         messages = history + [{"role": "user", "content": user_message}]
+        _print_prompt(system, messages)
         llm_timer = Timer()
         response  = _client.messages.create(
             model=CLAUDE_MODEL, max_tokens=MAX_TOKENS,
@@ -218,6 +219,7 @@ def handle_message(
     )
     messages = history + [{"role": "user", "content": user_message}]
 
+    _print_prompt(system, messages)
     llm_timer = Timer()
     response  = _client.messages.create(
         model=CLAUDE_MODEL, max_tokens=MAX_TOKENS,
@@ -250,6 +252,64 @@ def handle_message(
         "intent": intent.intent,
         "trace":  trace,
     }
+
+
+def _print_prompt(system: str, messages: list) -> None:
+    """
+    Print the EXACT prompt sent to Claude — system prompt,
+    conversation history, and current user message.
+
+    Only active when LOG_PROMPT=1 environment variable is set.
+    Usage:
+        LOG_PROMPT=1 python -m interfaces.cli
+    """
+    import os
+    if not os.getenv("LOG_PROMPT"):
+        return
+
+    W   = 70
+    SEP = "-" * W
+    MA  = "\033[95m"   # magenta
+    YE  = "\033[93m"   # yellow
+    GR  = "\033[92m"   # green
+    CY  = "\033[96m"   # cyan
+    DIM = "\033[90m"   # grey
+    R   = "\033[0m"    # reset
+    B   = "\033[1m"    # bold
+
+    print(f"\n{MA}{'='*W}{R}")
+    print(f"{MA}{B}  FULL PROMPT SENT TO CLAUDE{R}")
+    print(f"{MA}{'='*W}{R}")
+
+    # ── System prompt ──────────────────────────────────────────
+    print(f"\n{YE}{B}  SYSTEM PROMPT  ({len(system):,} chars){R}")
+    print(f"{DIM}{SEP}{R}")
+    # Split into lines for readable output
+    for line in system.split("\n"):
+        print(f"{DIM}  {line}{R}")
+    print(f"{DIM}{SEP}{R}")
+
+    # ── Conversation history ───────────────────────────────────
+    history_msgs = messages[:-1]
+    if history_msgs:
+        print(f"\n{YE}{B}  CONVERSATION HISTORY  ({len(history_msgs)} messages){R}")
+        print(f"{DIM}{SEP}{R}")
+        for msg in history_msgs:
+            role    = msg["role"].upper()
+            body    = msg["content"]
+            color   = CY if role == "ASSISTANT" else GR
+            preview = body[:400]
+            suffix  = f"  {DIM}... ({len(body):,} chars total){R}" if len(body) > 400 else ""
+            print(f"{color}{B}  [{role}]{R}")
+            print(f"  {preview}{suffix}")
+        print(f"{DIM}{SEP}{R}")
+
+    # ── Current user message ───────────────────────────────────
+    current = messages[-1]
+    print(f"\n{GR}{B}  CURRENT USER MESSAGE{R}")
+    print(f"{DIM}{SEP}{R}")
+    print(f"{GR}  {current['content']}{R}")
+    print(f"{MA}{'='*W}{R}\n")
 
 
 def _save(session_id: str, user_msg: str, reply: str) -> None:

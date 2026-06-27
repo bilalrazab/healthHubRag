@@ -13,6 +13,8 @@ Commands:
 Run:
     python -m interfaces.cli
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+To show prompt:
+$env:LOG_PROMPT=1; python -m interfaces.cli
 """
 
 import sys

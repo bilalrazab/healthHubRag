@@ -6,517 +6,420 @@
 <title>HealthHub — Patient Assistant</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
+
   :root {
-    --bg:        #0a0f1a;
-    --surface:   #111827;
-    --surface2:  #1a2436;
-    --border:    #1e3048;
-    --teal:      #00d4b8;
-    --teal-dim:  rgba(0,212,184,0.12);
-    --teal-glow: rgba(0,212,184,0.25);
-    --text:      #e2eaf5;
-    --text-dim:  #7a93b2;
-    --text-muted:#3d5a7a;
-    --green:     #22c55e;
-    --amber:     #f59e0b;
-    --red:       #f43f5e;
-    --blue:      #60a5fa;
-    --sans:      -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --mono:      'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
+    /* HealthHub Brand Colors */
+    --color-teal: 163, 30%, 52%;
+    --color-coral: 5, 78%, 55%;
+    --color-peach: 20, 65%, 62%;
+    --color-amber: 42, 85%, 55%;
+    --color-sage: 153, 25%, 58%;
+    --color-sky: 210, 25%, 82%;
+
+    /* Glassmorphism & One UI Theme */
+    --bg-base: #f8fafc;
+    --glass-surface: rgba(255, 255, 255, 0.65);
+    --glass-border: rgba(255, 255, 255, 0.8);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.04);
+    
+    --text-main: #0f172a;
+    --text-dim: #475569;
+    --text-muted: #94a3b8;
+    
+    --teal-primary: hsl(var(--color-teal));
+    --teal-dark: hsl(163, 35%, 40%);
+    
+    --radius-lg: 32px;
+    --radius-md: 24px;
+    --radius-sm: 16px;
+
+    --sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --mono: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
   }
 
-  * { margin:0; padding:0; box-sizing:border-box; }
-  html, body { height:100%; overflow:hidden; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
 
   body {
-    background: var(--bg);
-    color: var(--text);
+    background-color: var(--bg-base);
+    color: var(--text-main);
     font-family: var(--sans);
-    font-size: 14px;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     display: flex;
-    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* ── BACKGROUND MESH ── */
+  .bg-mesh {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    z-index: -1; overflow: hidden; background: var(--bg-base);
+  }
+  .bg-blob {
+    position: absolute; filter: blur(90px); opacity: 0.65;
+    animation: drift 20s infinite alternate ease-in-out;
+  }
+  .blob-1 { top: -10%; left: -10%; width: 55vw; height: 55vw; background: hsl(163, 40%, 85%); }
+  .blob-2 { bottom: -15%; right: -10%; width: 65vw; height: 65vw; background: hsl(210, 40%, 88%); animation-delay: -5s;}
+  .blob-3 { top: 30%; left: 30%; width: 45vw; height: 45vw; background: hsl(20, 50%, 88%); animation-delay: -10s;}
+
+  @keyframes drift {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(8%, 10%) scale(1.15); }
+  }
+
+  /* ── APP CONTAINER (ONE UI) ── */
+  .app-container {
+    width: 100%; max-width: 1024px;
+    height: 100%;
+    display: flex; flex-direction: column;
+    background: var(--glass-surface);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    box-shadow: var(--glass-shadow);
+    position: relative;
+    overflow: hidden;
+  }
+
+  @media (min-width: 1024px) {
+    .app-container {
+      height: 94vh;
+      border-radius: 40px;
+      border: 1px solid var(--glass-border);
+    }
   }
 
   /* ── HEADER ── */
   header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 20px;
-    height: 52px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 32px;
+    background: transparent;
+    border-bottom: 1px solid rgba(255,255,255,0.4);
     flex-shrink: 0;
-    gap: 12px;
+    z-index: 10;
   }
 
   .logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-weight: 700;
-    font-size: 15px;
-    color: var(--text);
-    white-space: nowrap;
+    display: flex; align-items: center; gap: 14px;
+    font-weight: 700; font-size: 18px; color: var(--text-main);
+    letter-spacing: -0.02em;
   }
   .logo-icon {
-    width: 28px; height: 28px;
-    background: var(--teal-dim);
-    border: 1px solid var(--teal);
-    border-radius: 6px;
+    width: 40px; height: 40px;
+    background: rgba(255,255,255,0.8);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 14px;
-    flex-shrink: 0;
+    font-size: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);
   }
   .logo-sub {
-    font-size: 11px;
-    font-weight: 400;
-    color: var(--text-muted);
-    margin-left: 2px;
+    font-size: 13px; font-weight: 500; color: var(--text-dim);
+    display: block; margin-top: 2px; letter-spacing: 0;
   }
 
-  .header-actions {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
+  .header-actions { display: flex; gap: 10px; align-items: center; }
 
   .btn-ghost {
-    background: transparent;
-    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.8);
     color: var(--text-dim);
-    padding: 5px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.15s;
-    white-space: nowrap;
+    padding: 10px 18px;
+    border-radius: 20px;
+    font-size: 14px; font-weight: 600; font-family: var(--sans);
+    cursor: pointer; transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
   }
   .btn-ghost:hover {
-    border-color: var(--teal);
-    color: var(--teal);
+    background: #ffffff; color: var(--teal-primary);
+    transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.04);
   }
   .btn-ghost.active {
-    background: var(--teal-dim);
-    border-color: var(--teal);
-    color: var(--teal);
+    background: var(--teal-primary); color: white; border-color: var(--teal-primary);
   }
 
   /* ── MAIN LAYOUT ── */
-  .main {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-  }
+  .main { display: flex; flex: 1; overflow: hidden; }
+  .chat-panel { display: flex; flex-direction: column; flex: 1; min-width: 0; overflow: hidden; position: relative; }
 
-  /* ── CHAT PANEL ── */
-  .chat-panel {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
+  /* ── WELCOME SCREEN (CENTER SVG) ── */
+  .welcome-screen {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    padding: 40px; text-align: center;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    pointer-events: none; /* Let clicks pass through if needed */
+  }
+  .welcome-screen.hidden { opacity: 0; transform: translateY(-20px); pointer-events: none; }
+  
+  .hero-svg-wrapper {
+    margin-bottom: 32px; color: var(--teal-dark);
+    animation: float 6s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+  
+  .welcome-text {
+    font-size: 22px; font-weight: 600; color: var(--text-main);
+    line-height: 1.5; letter-spacing: -0.02em; max-width: 480px;
+    min-height: 100px;
   }
 
   /* ── MESSAGES ── */
   #messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    scroll-behavior: smooth;
+    flex: 1; overflow-y: auto; padding: 32px;
+    display: flex; flex-direction: column; gap: 24px;
+    scroll-behavior: smooth; z-index: 2;
   }
-
-  #messages::-webkit-scrollbar { width: 5px; }
+  #messages::-webkit-scrollbar { width: 6px; }
   #messages::-webkit-scrollbar-track { background: transparent; }
-  #messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  #messages::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; }
 
   .message {
-    display: flex;
-    gap: 10px;
-    max-width: 760px;
-    animation: fadeUp 0.2s ease;
+    display: flex; gap: 14px; max-width: 85%;
+    opacity: 0; transform: translateY(12px);
+    animation: fadeUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
   }
 
   @keyframes fadeUp {
-    from { opacity:0; transform: translateY(6px); }
-    to   { opacity:1; transform: translateY(0); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
-  .message.user  { align-self: flex-end;   flex-direction: row-reverse; }
-  .message.bot   { align-self: flex-start; }
+  .message.user { align-self: flex-end; flex-direction: row-reverse; }
+  .message.bot { align-self: flex-start; }
 
   .avatar {
-    width: 30px; height: 30px;
-    border-radius: 8px;
+    width: 36px; height: 36px; border-radius: 12px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 14px;
-    flex-shrink: 0;
-    margin-top: 2px;
+    font-size: 18px; flex-shrink: 0; margin-top: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   }
-  .user .avatar  { background: var(--teal-dim); border: 1px solid var(--teal); }
-  .bot  .avatar  { background: var(--surface2); border: 1px solid var(--border); }
+  .user .avatar { background: rgba(255,255,255,0.8); border: 1px solid var(--glass-border); }
+  .bot .avatar { background: #ffffff; border: 1px solid var(--glass-border); }
 
   .bubble {
-    padding: 12px 16px;
-    border-radius: 12px;
-    max-width: calc(100% - 44px);
-    line-height: 1.6;
-    font-size: 14px;
+    padding: 16px 20px; line-height: 1.6; font-size: 15px;
+    letter-spacing: -0.01em; box-shadow: var(--glass-shadow);
   }
 
   .user .bubble {
-    background: var(--teal-dim);
-    border: 1px solid rgba(0,212,184,0.25);
-    border-bottom-right-radius: 3px;
-    color: var(--text);
+    background: linear-gradient(135deg, hsl(163, 35%, 48%), hsl(163, 35%, 40%));
+    color: white; border-radius: var(--radius-md) 6px var(--radius-md) var(--radius-md);
   }
 
   .bot .bubble {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-bottom-left-radius: 3px;
-    color: var(--text);
+    background: var(--glass-surface);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px var(--radius-md) var(--radius-md) var(--radius-md);
+    color: var(--text-main);
   }
 
-  /* Markdown rendering inside bot bubbles */
-  .bubble p  { margin-bottom: 8px; }
+  /* Markdown rendering */
+  .bubble p { margin-bottom: 12px; }
   .bubble p:last-child { margin-bottom: 0; }
-  .bubble strong { color: var(--text); font-weight: 600; }
-  .bubble em { color: var(--text-dim); }
-  .bubble ul, .bubble ol {
-    padding-left: 18px;
-    margin: 6px 0;
-  }
-  .bubble li { margin: 3px 0; line-height: 1.5; }
+  .bubble strong { font-weight: 600; color: inherit; }
+  .user .bubble strong { color: #fff; }
+  .bot .bubble strong { color: var(--text-main); }
+  .bubble ul, .bubble ol { padding-left: 20px; margin: 12px 0; }
+  .bubble li { margin: 6px 0; }
   .bubble h1, .bubble h2, .bubble h3 {
-    color: var(--teal);
-    margin: 10px 0 6px;
-    font-size: 14px;
+    color: var(--teal-dark); margin: 20px 0 10px; font-size: 16px; font-weight: 700;
   }
-  .bubble a { color: var(--teal); text-decoration: none; }
+  .bubble a { color: var(--teal-primary); text-decoration: none; font-weight: 500; }
   .bubble a:hover { text-decoration: underline; }
   .bubble code {
-    background: rgba(0,0,0,0.3);
-    padding: 1px 6px;
-    border-radius: 4px;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--teal);
+    background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 6px;
+    font-family: var(--mono); font-size: 13px; color: var(--teal-dark);
   }
-  .bubble pre {
-    background: rgba(0,0,0,0.3);
-    padding: 10px;
-    border-radius: 6px;
-    overflow-x: auto;
-    margin: 8px 0;
-  }
-  .bubble pre code {
-    background: none;
-    padding: 0;
-    color: var(--text-dim);
-  }
-  .bubble blockquote {
-    border-left: 3px solid var(--teal);
-    padding-left: 10px;
-    color: var(--text-dim);
-    margin: 6px 0;
-  }
-  .bubble hr {
-    border: none;
-    border-top: 1px solid var(--border);
-    margin: 10px 0;
-  }
-
+  
   /* Intent badge */
   .intent-badge {
-    display: inline-block;
-    font-size: 10px;
-    font-family: var(--mono);
-    padding: 2px 7px;
-    border-radius: 4px;
-    margin-top: 6px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: var(--text-muted);
-    letter-spacing: 0.05em;
+    display: inline-block; font-size: 11px; font-family: var(--mono); font-weight: 500;
+    padding: 4px 10px; border-radius: 12px; margin-top: 8px;
+    background: rgba(255,255,255,0.7); border: 1px solid var(--glass-border);
+    color: var(--text-dim); box-shadow: 0 2px 6px rgba(0,0,0,0.02);
   }
 
-  /* Thinking indicator */
-  .thinking .bubble {
-    display: flex;
-    gap: 5px;
-    align-items: center;
-    padding: 14px 18px;
-  }
+  /* Typing indicator */
+  .thinking .bubble { display: flex; gap: 6px; align-items: center; padding: 20px 24px; }
   .dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--teal);
-    animation: pulse 1.2s ease-in-out infinite;
-    opacity: 0.4;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--teal-primary); animation: typingPulse 1.4s ease-in-out infinite; opacity: 0.3;
   }
   .dot:nth-child(2) { animation-delay: 0.2s; }
   .dot:nth-child(3) { animation-delay: 0.4s; }
-  @keyframes pulse {
-    0%,100% { opacity:0.3; transform:scale(0.9); }
-    50%      { opacity:1;   transform:scale(1.1); }
-  }
+  @keyframes typingPulse { 0%, 100% { opacity:0.3; transform:scale(0.8); } 50% { opacity:1; transform:scale(1.1); } }
 
-  /* ── INPUT AREA ── */
+  /* ── INPUT AREA (ONE UI DOCK) ── */
   .input-area {
-    padding: 12px 20px 16px;
-    border-top: 1px solid var(--border);
-    background: var(--surface);
-    flex-shrink: 0;
+    padding: 16px 32px 32px; background: transparent; flex-shrink: 0; z-index: 10;
   }
-
-  .input-row {
-    display: flex;
-    gap: 8px;
-    align-items: flex-end;
-    max-width: 760px;
+  .input-wrapper {
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.06);
+    display: flex; align-items: flex-end; gap: 12px;
+    padding: 8px 12px; transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .input-wrapper:focus-within {
+    background: #ffffff; box-shadow: 0 16px 40px rgba(0,0,0,0.08); transform: translateY(-2px);
   }
 
   #messageInput {
-    flex: 1;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 14px;
-    color: var(--text);
-    font-family: var(--sans);
-    font-size: 14px;
-    resize: none;
-    outline: none;
-    min-height: 42px;
-    max-height: 120px;
-    line-height: 1.5;
-    transition: border-color 0.15s;
-  }
-  #messageInput:focus { border-color: var(--teal); }
-  #messageInput::placeholder { color: var(--text-muted); }
-
-  #sendBtn {
-    background: var(--teal);
-    border: none;
-    border-radius: 10px;
-    width: 42px; height: 42px;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: opacity 0.15s, transform 0.1s;
-    flex-shrink: 0;
-  }
-  #sendBtn:hover  { opacity: 0.85; }
-  #sendBtn:active { transform: scale(0.95); }
-  #sendBtn:disabled { opacity: 0.4; cursor: default; }
-  #sendBtn svg { width:18px; height:18px; fill:#0a0f1a; }
-
-  /* ── DEBUG PANEL ── */
-  .debug-panel {
-    width: 340px;
-    flex-shrink: 0;
-    border-left: 1px solid var(--border);
-    background: var(--surface);
-    overflow-y: auto;
-    display: none;
-    flex-direction: column;
-  }
-  .debug-panel.open { display: flex; }
-  .debug-panel::-webkit-scrollbar { width: 4px; }
-  .debug-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius:3px; }
-
-  .debug-header {
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--border);
-    font-size: 11px;
-    font-family: var(--mono);
-    color: var(--teal);
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    position: sticky;
-    top: 0;
-    background: var(--surface);
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .debug-empty {
-    padding: 32px 20px;
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 12px;
-    line-height: 1.8;
-  }
-
-  .debug-section {
-    border-bottom: 1px solid var(--border);
+    flex: 1; background: transparent; border: none; color: var(--text-main);
+    font-family: var(--sans); font-size: 16px; resize: none; outline: none;
+    min-height: 48px; max-height: 150px; line-height: 1.5;
     padding: 12px 16px;
   }
+  #messageInput::placeholder { color: var(--text-muted); font-weight: 400; }
 
+  #sendBtn {
+    background: var(--teal-primary); border: none; border-radius: 24px;
+    width: 48px; height: 48px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0, 212, 184, 0.2);
+  }
+  #sendBtn:hover { transform: scale(1.05); background: var(--teal-dark); }
+  #sendBtn:disabled { background: var(--text-muted); box-shadow: none; cursor: default; transform: none; }
+  #sendBtn svg { width: 22px; height: 22px; fill: white; }
+
+  /* ── DEBUG PANEL (FROSTED GLASS) ── */
+  .debug-panel {
+    width: 380px; flex-shrink: 0;
+    border-left: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px);
+    overflow-y: auto; display: none; flex-direction: column;
+  }
+  .debug-panel.open { display: flex; animation: slideIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  @keyframes slideIn { from { margin-right: -380px; opacity: 0; } to { margin-right: 0; opacity: 1; } }
+  
+  .debug-panel::-webkit-scrollbar { width: 6px; }
+  .debug-panel::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius:3px; }
+
+  .debug-header {
+    padding: 24px; border-bottom: 1px solid rgba(255,255,255,0.6);
+    font-size: 12px; font-family: var(--mono); color: var(--teal-dark); font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase; position: sticky; top: 0;
+    background: rgba(255,255,255,0.6); backdrop-filter: blur(12px); z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .debug-empty { padding: 40px 24px; text-align: center; color: var(--text-dim); font-size: 14px; line-height: 1.8; }
+  .debug-section { border-bottom: 1px solid rgba(255,255,255,0.6); padding: 20px 24px; }
   .debug-section-title {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--teal);
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    font-family: var(--mono); font-size: 11px; color: var(--teal-primary); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
   }
   .debug-section-title::before {
-    content: '';
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--teal);
-    flex-shrink: 0;
+    content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--teal-primary);
   }
 
-  .debug-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 5px;
-    gap: 8px;
-  }
-  .debug-label {
-    font-size: 11px;
-    color: var(--text-muted);
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-  .debug-value {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--text-dim);
-    text-align: right;
-    word-break: break-all;
-  }
-  .debug-value.highlight { color: var(--text); font-weight: 700; }
-  .debug-value.good  { color: var(--green); }
-  .debug-value.warn  { color: var(--amber); }
-  .debug-value.bad   { color: var(--red); }
-  .debug-value.teal  { color: var(--teal); }
-  .debug-value.blue  { color: var(--blue); }
+  .debug-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 12px; }
+  .debug-label { font-size: 13px; color: var(--text-dim); font-weight: 500; }
+  .debug-value { font-family: var(--mono); font-size: 12px; color: var(--text-main); text-align: right; word-break: break-all; }
+  .debug-value.highlight { font-weight: 700; }
+  .debug-value.good { color: hsl(var(--color-sage)); }
+  .debug-value.warn { color: hsl(var(--color-amber)); }
+  .debug-value.bad { color: hsl(var(--color-coral)); }
+  .debug-value.teal { color: hsl(var(--color-teal)); }
 
-  .conf-bar {
-    height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    margin: 4px 0 8px;
-    overflow: hidden;
-  }
-  .conf-fill {
-    height: 100%;
-    border-radius: 2px;
-    transition: width 0.4s ease;
-  }
+  .conf-bar { height: 6px; background: rgba(0,0,0,0.05); border-radius: 3px; margin: 8px 0 12px; overflow: hidden; }
+  .conf-fill { height: 100%; border-radius: 3px; transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
   .route-tag {
-    display: inline-block;
-    font-family: var(--mono);
-    font-size: 10px;
-    padding: 3px 8px;
-    border-radius: 4px;
-    background: rgba(96,165,250,0.1);
-    border: 1px solid rgba(96,165,250,0.2);
-    color: var(--blue);
-    margin-top: 2px;
-    word-break: break-all;
+    display: inline-block; font-family: var(--mono); font-size: 11px; font-weight: 600;
+    padding: 6px 12px; border-radius: 16px; background: #ffffff;
+    border: 1px solid var(--glass-border); color: hsl(var(--color-sky)); box-shadow: 0 2px 8px rgba(0,0,0,0.02);
   }
-
-  .cost-display {
-    font-family: var(--mono);
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--green);
-    margin: 4px 0;
-  }
-
-  .latency-row {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    margin-top: 4px;
-  }
-  .latency-chip {
-    font-family: var(--mono);
-    font-size: 10px;
-    padding: 3px 8px;
-    border-radius: 4px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    color: var(--text-dim);
-  }
-  .latency-chip span { color: var(--amber); font-weight: 700; }
+  .cost-display { font-family: var(--mono); font-size: 24px; font-weight: 700; color: hsl(var(--color-sage)); margin: 8px 0 12px; }
 
   /* ── RESPONSIVE ── */
-  @media (max-width: 640px) {
-    .debug-panel { width: 100%; position: absolute; top:52px; right:0; bottom:0; z-index:50; }
+  @media (max-width: 768px) {
+    header { padding: 16px 20px; }
     .logo-sub { display: none; }
+    .debug-panel { width: 100%; position: absolute; top:72px; right:0; bottom:0; z-index:50; }
+    #messages { padding: 20px; }
+    .input-area { padding: 12px 20px 20px; }
+    .message { max-width: 95%; }
   }
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<header>
-  <div class="logo">
-    <div class="logo-icon">🏥</div>
-    <div>
-      HealthHub
-      <span class="logo-sub">by Al-Futtaim · Patient Assistant</span>
-    </div>
-  </div>
-  <div class="header-actions">
-    <button class="btn-ghost" id="clearBtn" title="Clear conversation">↺ Clear</button>
-    <button class="btn-ghost" id="debugBtn" title="Toggle debug panel">⚙ Debug</button>
-  </div>
-</header>
+<div class="bg-mesh">
+  <div class="bg-blob blob-1"></div>
+  <div class="bg-blob blob-2"></div>
+  <div class="bg-blob blob-3"></div>
+</div>
 
-<!-- MAIN -->
-<div class="main">
-
-  <!-- CHAT -->
-  <div class="chat-panel">
-    <div id="messages"></div>
-    <div class="input-area">
-      <div class="input-row">
-        <textarea
-          id="messageInput"
-          placeholder="Ask about doctors, branches, insurance, appointments…"
-          rows="1"
-          autocomplete="off"
-          spellcheck="true"
-        ></textarea>
-        <button id="sendBtn" title="Send (Enter)">
-          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-          </svg>
-        </button>
+<div class="app-container">
+  
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🏥</div>
+      <div>
+        HealthHub
+        <span class="logo-sub">by Al-Futtaim · Patient Assistant</span>
       </div>
     </div>
-  </div>
-
-  <!-- DEBUG PANEL -->
-  <div class="debug-panel" id="debugPanel">
-    <div class="debug-header">
-      <span>⚙ Pipeline Trace</span>
-      <span id="turnCounter" style="color:var(--text-muted);font-size:10px;">Turn —</span>
+    <div class="header-actions">
+      <button class="btn-ghost" id="clearBtn" title="Clear conversation">↺ Clear</button>
+      <button class="btn-ghost" id="debugBtn" title="Toggle debug panel">⚙ Debug</button>
     </div>
-    <div id="debugContent">
-      <div class="debug-empty">
-        Send a message to see<br>the full pipeline trace.
+  </header>
+
+  <div class="main">
+    
+    <div class="chat-panel">
+      
+      <div id="welcomeScreen" class="welcome-screen">
+        <div class="hero-svg-wrapper">
+          <svg width="100" height="100" viewBox="0 0 72 72" fill="none" class="" style="--node-teal: hsl(var(--color-teal)); --node-coral: hsl(var(--color-coral)); --node-peach: hsl(var(--color-peach)); --node-amber: hsl(var(--color-amber)); --node-sage: hsl(var(--color-sage)); --node-sky: hsl(var(--color-sky));"><circle cx="36" cy="36" r="32.4" stroke="currentColor" stroke-width="2.5200000000000005" opacity="0.2225903737344197" fill="none" pathLength="1" stroke-dashoffset="0" stroke-dasharray="0.8903614949376788 1"></circle><ellipse cx="36" cy="36" rx="31.68" ry="14.4" stroke="currentColor" stroke-width="2.0160000000000005" opacity="0.1429413680380094" fill="none" transform="rotate(-25 36 36)" pathLength="1" stroke-dashoffset="0" stroke-dasharray="0.9529424535867292 1"></ellipse><ellipse cx="36" cy="36" rx="27" ry="18" stroke="currentColor" stroke-width="2.0160000000000005" opacity="0.15" fill="none" transform="rotate(35 36 36)" pathLength="1" stroke-dashoffset="0" stroke-dasharray="1 1"></ellipse><line x1="36" y1="9.990000000000002" x2="55.89" y2="19.169999999999998" stroke="currentColor" stroke-width="1.5120000000000002" opacity="0.2" pathLength="1" stroke-dashoffset="0" stroke-dasharray="1 1"></line><line x1="55.89" y1="19.169999999999998" x2="61.092" y2="40.59" stroke="currentColor" stroke-width="1.5120000000000002" opacity="0.2" pathLength="1" stroke-dashoffset="0" stroke-dasharray="1 1"></line><line x1="61.092" y1="40.59" x2="49.769999999999996" y2="57.42" stroke="currentColor" stroke-width="1.5120000000000002" opacity="0.2" pathLength="1" stroke-dashoffset="0" stroke-dasharray="1 1"></line><line x1="49.769999999999996" y1="57.42" x2="26.82" y2="60.480000000000004" stroke="currentColor" stroke-width="1.5120000000000002" opacity="0.2" pathLength="1" stroke-dashoffset="0" stroke-dasharray="1 1"></line><line x1="26.82" y1="60.480000000000004" x2="13.05" y2="46.71" stroke="currentColor" stroke-width="1.5120000000000002" opacity="0.2" pathLength="1" stroke-dashoffset="0" stroke-dasharray="1 1"></line><line x1="13.05" y1="46.71" x2="14.580000000000002" y2="23.759999999999998" stroke="currentColor" stroke-width="1.5120000000000002" opacity="0.2" pathLength="1" stroke-dashoffset="0" stroke-dasharray="1 1"></line><line x1="14.580000000000002" y1="23.759999999999998" x2="36" y2="9.990000000000002" stroke="currentColor" stroke-width="1.5120000000000002" opacity="0.2" pathLength="1" stroke-dashoffset="0" stroke-dasharray="1 1"></line><line x1="36" y1="9.990000000000002" x2="28.35" y2="25.29" stroke="currentColor" stroke-width="1.5120000000000002" opacity="0.2" pathLength="1" stroke-dashoffset="0" stroke-dasharray="1 1"></line><line x1="55.89" y1="19.169999999999998" x2="46.71" y2="31.41" stroke="currentColor" stroke-width="1.5120000000000002" opacity="0.2" pathLength="1" stroke-dashoffset="0" stroke-dasharray="1 1"></line><line x1="40.59" y1="39.06" x2="28.35" y2="25.29" stroke="currentColor" stroke-width="1.5120000000000002" opacity="0.2" pathLength="1" stroke-dashoffset="0" stroke-dasharray="1 1"></line><line x1="40.59" y1="39.06" x2="46.71" y2="31.41" stroke="currentColor" stroke-width="1.5120000000000002" opacity="0.2" pathLength="1" stroke-dashoffset="0" stroke-dasharray="1 1"></line><line x1="40.59" y1="39.06" x2="49.769999999999996" y2="57.42" stroke="currentColor" stroke-width="1.5120000000000002" opacity="0.2" pathLength="1" stroke-dashoffset="0" stroke-dasharray="1 1"></line><line x1="28.35" y1="25.29" x2="13.05" y2="46.71" stroke="currentColor" stroke-width="1.5120000000000002" opacity="0.2" pathLength="1" stroke-dashoffset="0" stroke-dasharray="1 1"></line><line x1="46.71" y1="31.41" x2="61.092" y2="40.59" stroke="currentColor" stroke-width="1.5120000000000002" opacity="0.2" pathLength="1" stroke-dashoffset="0" stroke-dasharray="1 1"></line><circle cx="36" cy="9.990000000000002" r="3.2399999999999998" fill="var(--node-teal)" opacity="1" style="transform: scale(1.04497); transform-origin: 50% 50%; transform-box: fill-box;"></circle><circle cx="55.89" cy="19.169999999999998" r="3.2399999999999998" fill="var(--node-coral)" opacity="1" style="transform: scale(1.01652); transform-origin: 50% 50%; transform-box: fill-box;"></circle><circle cx="61.092" cy="40.59" r="3.2399999999999998" fill="var(--node-peach)" opacity="0.9985120621188225" style="transform: scale(0.998512); transform-origin: 50% 50%; transform-box: fill-box;"></circle><circle cx="49.769999999999996" cy="57.42" r="3.2399999999999998" fill="var(--node-amber)" opacity="1" style="transform: none; transform-origin: 50% 50%; transform-box: fill-box;"></circle><circle cx="26.82" cy="60.480000000000004" r="3.2399999999999998" fill="var(--node-sage)" opacity="1" style="transform: none; transform-origin: 50% 50%; transform-box: fill-box;"></circle><circle cx="13.05" cy="46.71" r="3.2399999999999998" fill="var(--node-sky)" opacity="1" style="transform: none; transform-origin: 50% 50%; transform-box: fill-box;"></circle><circle cx="14.580000000000002" cy="23.759999999999998" r="3.2399999999999998" fill="var(--node-teal)" opacity="1" style="transform: none; transform-origin: 50% 50%; transform-box: fill-box;"></circle><circle cx="40.59" cy="39.06" r="3.2399999999999998" fill="var(--node-coral)" opacity="1" style="transform: none; transform-origin: 50% 50%; transform-box: fill-box;"></circle><circle cx="28.35" cy="25.29" r="3.2399999999999998" fill="var(--node-peach)" opacity="1" style="transform: none; transform-origin: 50% 50%; transform-box: fill-box;"></circle><circle cx="46.71" cy="31.41" r="3.2399999999999998" fill="var(--node-amber)" opacity="1" style="transform: none; transform-origin: 50% 50%; transform-box: fill-box;"></circle></svg>
+        </div>
+        <div id="welcomeTypingText" class="welcome-text"></div>
+      </div>
+
+      <div id="messages"></div>
+      
+      <div class="input-area">
+        <div class="input-wrapper">
+          <textarea
+            id="messageInput"
+            placeholder="Ask about doctors, branches, insurance, appointments…"
+            rows="1"
+            autocomplete="off"
+            spellcheck="true"
+          ></textarea>
+          <button id="sendBtn" title="Send (Enter)">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
-  </div>
 
+    <div class="debug-panel" id="debugPanel">
+      <div class="debug-header">
+        <span>⚙ Pipeline Trace</span>
+        <span id="turnCounter" style="color:var(--text-muted);font-size:11px;">Turn —</span>
+      </div>
+      <div id="debugContent">
+        <div class="debug-empty">
+          Send a message to see<br>the full pipeline trace.
+        </div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
 <script>
@@ -526,14 +429,10 @@ const SESSION_ID = 'session_' + Math.random().toString(36).slice(2, 10);
 let debugMode    = false;
 let turnCount    = 0;
 let isSending    = false;
+let isTyping     = false;
+let welcomeDone  = false;
 
-// marked.js — render markdown
-marked.setOptions({
-  breaks: true,
-  gfm: true,
-  mangle: false,
-  headerIds: false,
-});
+marked.setOptions({ breaks: true, gfm: true, mangle: false, headerIds: false });
 
 // ── DOM refs ──────────────────────────────────────────────────
 const messagesEl   = document.getElementById('messages');
@@ -544,19 +443,73 @@ const debugBtn     = document.getElementById('debugBtn');
 const debugContent = document.getElementById('debugContent');
 const clearBtn     = document.getElementById('clearBtn');
 const turnCounter  = document.getElementById('turnCounter');
+const welcomeScreen= document.getElementById('welcomeScreen');
+const welcomeTextEl= document.getElementById('welcomeTypingText');
 
-// ── Initial greeting ──────────────────────────────────────────
-appendBot(
-  "👋 **Hello! Welcome to HealthHub by Al-Futtaim.**\n\n" +
-  "I'm your virtual clinic assistant. I can help you with:\n" +
-  "• Finding a doctor or specialist\n" +
-  "• Clinic locations, hours & contact details\n" +
-  "• Insurance coverage queries\n" +
-  "• Health packages & prices\n" +
-  "• Appointment booking guidance\n\n" +
-  "How can I help you today?",
-  "greeting"
-);
+// ── Initial greeting (Typing Effect) ──────────────────────────
+function playWelcome() {
+  welcomeScreen.classList.remove('hidden');
+  welcomeTextEl.innerHTML = '';
+  const textToType = "Hello! Welcome to HealthHub by Al-Futtaim.\nI'm your virtual clinic assistant.\nHow can I help you today?";
+  let i = 0;
+  isTyping = true;
+  
+  function typeW() {
+    if (i < textToType.length) {
+      if(textToType.charAt(i) === '\n') {
+        welcomeTextEl.appendChild(document.createElement('br'));
+      } else {
+        welcomeTextEl.appendChild(document.createTextNode(textToType.charAt(i)));
+      }
+      i++;
+      setTimeout(typeW, 30);
+    } else {
+      isTyping = false;
+      welcomeDone = true;
+    }
+  }
+  // Start shortly after load
+  setTimeout(typeW, 500);
+}
+playWelcome();
+
+function hideWelcome() {
+  if (!welcomeScreen.classList.contains('hidden')) {
+    welcomeScreen.classList.add('hidden');
+  }
+}
+
+// ── HTML Live Typing Effect for Markdown ──────────────────────
+async function typewriterHTML(el, htmlString, speed = 12) {
+  isTyping = true;
+  el.innerHTML = '';
+  let tempDiv = document.createElement('div');
+  tempDiv.innerHTML = htmlString;
+
+  async function processNode(node, parent) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      let text = node.nodeValue;
+      let textNode = document.createTextNode('');
+      parent.appendChild(textNode);
+      for (let i = 0; i < text.length; i++) {
+        textNode.nodeValue += text[i];
+        scrollToBottom();
+        await new Promise(r => setTimeout(r, speed));
+      }
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      let newEl = document.createElement(node.tagName);
+      for (let attr of node.attributes) {
+        newEl.setAttribute(attr.name, attr.value);
+      }
+      parent.appendChild(newEl);
+      for (let child of node.childNodes) {
+        await processNode(child, newEl);
+      }
+    }
+  }
+  await processNode(tempDiv, el);
+  isTyping = false;
+}
 
 // ── Toggle debug panel ────────────────────────────────────────
 debugBtn.addEventListener('click', () => {
@@ -568,21 +521,19 @@ debugBtn.addEventListener('click', () => {
 
 // ── Clear conversation ────────────────────────────────────────
 clearBtn.addEventListener('click', async () => {
-  await fetch(`${API_BASE}/session/clear?session_id=${SESSION_ID}`);
+  if (isTyping || isSending) return;
+  // await fetch(`${API_BASE}/session/clear?session_id=${SESSION_ID}`);
   messagesEl.innerHTML = '';
   turnCount = 0;
   turnCounter.textContent = 'Turn —';
   debugContent.innerHTML = '<div class="debug-empty">Send a message to see<br>the full pipeline trace.</div>';
-  appendBot(
-    "Conversation cleared. How can I help you?",
-    "out_of_scope"
-  );
+  playWelcome();
 });
 
 // ── Auto-resize textarea ──────────────────────────────────────
 inputEl.addEventListener('input', () => {
   inputEl.style.height = 'auto';
-  inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 150) + 'px';
 });
 
 // ── Send on Enter (Shift+Enter for newline) ───────────────────
@@ -597,7 +548,9 @@ sendBtn.addEventListener('click', sendMessage);
 // ── Send message ──────────────────────────────────────────────
 async function sendMessage() {
   const text = inputEl.value.trim();
-  if (!text || isSending) return;
+  if (!text || isSending || isTyping) return;
+
+  hideWelcome(); // hide center UI
 
   isSending = true;
   sendBtn.disabled = true;
@@ -608,25 +561,23 @@ async function sendMessage() {
   const thinkingEl = appendThinking();
 
   try {
+    // Simulated fetch for visual testing. Replace with actual fetch.
+    
     const res = await fetch(`${API_BASE}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message:    text,
-        session_id: SESSION_ID,
-        debug:      debugMode,
-      }),
+      body: JSON.stringify({ message: text, session_id: SESSION_ID, debug: debugMode }),
     });
-
-    if (!res.ok) {
-      const err = await res.text();
-      throw new Error(`Server error ${res.status}: ${err}`);
-    }
-
     const data = await res.json();
+    
+
+    // Mock delay
+    await new Promise(r => setTimeout(r, 1200));
+    
+
     thinkingEl.remove();
     turnCount++;
-    appendBot(data.reply, data.intent);
+    await appendBot(data.reply, data.intent);
 
     if (debugMode && data.debug) {
       renderDebug(data.debug, turnCount);
@@ -634,10 +585,7 @@ async function sendMessage() {
 
   } catch (err) {
     thinkingEl.remove();
-    appendBot(
-      `⚠️ Something went wrong: ${err.message}\n\nPlease try again or contact us on +971 800 2344.`,
-      "error"
-    );
+    await appendBot(`⚠️ Something went wrong. Please try again.`, "error");
   }
 
   isSending = false;
@@ -650,28 +598,31 @@ function appendUser(text) {
   const el = document.createElement('div');
   el.className = 'message user';
   el.innerHTML = `
-    <div class="avatar">👤</div>
     <div class="bubble">${escapeHtml(text)}</div>
   `;
   messagesEl.appendChild(el);
   scrollToBottom();
 }
 
-function appendBot(mdText, intent) {
+async function appendBot(mdText, intent) {
   const el = document.createElement('div');
   el.className = 'message bot';
   const html = marked.parse(mdText || '');
   const badge = intent && intent !== 'greeting' && intent !== 'error'
     ? `<div class="intent-badge">${intent}</div>` : '';
+  
   el.innerHTML = `
     <div class="avatar">🏥</div>
     <div>
-      <div class="bubble">${html}</div>
+      <div class="bubble"><div class="typing-target"></div></div>
       ${badge}
     </div>
   `;
   messagesEl.appendChild(el);
   scrollToBottom();
+
+  const target = el.querySelector('.typing-target');
+  await typewriterHTML(target, html, 15);
   return el;
 }
 
@@ -699,40 +650,28 @@ function scrollToBottom() {
 function renderDebug(d, turn) {
   turnCounter.textContent = `Turn #${turn}`;
 
-  // Confidence colour
   const confColor = d.confidence >= 0.8 ? 'good' : d.confidence >= 0.5 ? 'warn' : 'bad';
-  const confPct   = Math.round(d.confidence * 100);
-  const confBarColor = d.confidence >= 0.8 ? '#22c55e' : d.confidence >= 0.5 ? '#f59e0b' : '#f43f5e';
+  const confPct   = Math.round((d.confidence || 0) * 100);
+  const confBarColor = d.confidence >= 0.8 ? 'hsl(var(--color-sage))' : d.confidence >= 0.5 ? 'hsl(var(--color-amber))' : 'hsl(var(--color-coral))';
 
-  // Entity extraction
   const entities = [
-    d.branch       && `branch: <span style="color:var(--teal)">${d.branch}</span>`,
-    d.speciality   && `spec: <span style="color:var(--blue)">${d.speciality}</span>`,
-    d.doctor_name  && `doctor: <span style="color:var(--amber)">${d.doctor_name}</span>`,
-    d.insurance    && `insurance: <span style="color:var(--green)">${d.insurance}</span>`,
+    d.branch       && `branch: <span style="color:hsl(var(--color-teal))">${d.branch}</span>`,
+    d.speciality   && `spec: <span style="color:hsl(var(--color-sky))">${d.speciality}</span>`,
+    d.doctor_name  && `doctor: <span style="color:hsl(var(--color-amber))">${d.doctor_name}</span>`,
+    d.insurance    && `insurance: <span style="color:hsl(var(--color-sage))">${d.insurance}</span>`,
   ].filter(Boolean);
 
-  // Retrieval summary
-  const totalChunks = d.rrf_chunks || (d.vec_chunks + d.bm25_chunks);
   const sqlHit  = d.sql_rows  > 0 ? 'good' : 'warn';
   const vecHit  = d.vec_chunks > 0 ? 'good' : 'warn';
-  const bm25Hit = d.bm25_chunks> 0 ? 'good' : 'warn';
-
-  // Cost colour
-  const costColor = d.cost_usd < 0.005 ? 'good' : d.cost_usd < 0.01 ? 'warn' : 'bad';
-  const costStr   = d.cost_usd < 0.0001 ? '$0.0000' : `$${d.cost_usd.toFixed(4)}`;
-
   const fastPath  = d.was_fast_path;
-  const apiCalls  = fastPath ? 0 : 2;
+  const costStr   = (d.cost_usd || 0) < 0.0001 ? '$0.0000' : `$${(d.cost_usd || 0).toFixed(4)}`;
 
   debugContent.innerHTML = `
-
-    <!-- ① Intent -->
     <div class="debug-section">
       <div class="debug-section-title">① Intent Classification</div>
       <div class="debug-row">
         <span class="debug-label">Intent</span>
-        <span class="debug-value teal highlight">${d.intent}</span>
+        <span class="debug-value teal highlight">${d.intent || 'N/A'}</span>
       </div>
       <div class="debug-row">
         <span class="debug-label">Confidence</span>
@@ -743,76 +682,29 @@ function renderDebug(d, turn) {
       </div>
       ${entities.length > 0 ? `
         <div style="margin-bottom:4px">
-          ${entities.map(e => `<div class="debug-row"><span class="debug-label">Entity</span><span class="debug-value" style="font-family:var(--mono);font-size:10px">${e}</span></div>`).join('')}
+          ${entities.map(e => `<div class="debug-row"><span class="debug-label">Entity</span><span class="debug-value" style="font-family:var(--mono);font-size:11px">${e}</span></div>`).join('')}
         </div>
       ` : `<div class="debug-row"><span class="debug-label">Entities</span><span class="debug-value" style="color:var(--text-muted)">none extracted</span></div>`}
-      <div class="debug-row">
-        <span class="debug-label">Method</span>
-        <span class="debug-value ${fastPath ? 'good' : 'blue'}">${fastPath ? 'fast-path ($0)' : 'Claude API'}</span>
-      </div>
     </div>
 
-    <!-- ② Route -->
     <div class="debug-section">
-      <div class="debug-section-title">② Retrieval Route</div>
-      <div class="route-tag">${d.route_taken || '—'}</div>
-    </div>
-
-    <!-- ③ Retrieval -->
-    <div class="debug-section">
-      <div class="debug-section-title">③ Retrieval Results</div>
+      <div class="debug-section-title">② Retrieval Results</div>
       <div class="debug-row">
         <span class="debug-label">SQL rows</span>
-        <span class="debug-value ${sqlHit} highlight">${d.sql_rows}</span>
+        <span class="debug-value ${sqlHit} highlight">${d.sql_rows || 0}</span>
       </div>
       <div class="debug-row">
         <span class="debug-label">Vector chunks</span>
-        <span class="debug-value ${vecHit}">${d.vec_chunks}</span>
-      </div>
-      <div class="debug-row">
-        <span class="debug-label">BM25 chunks</span>
-        <span class="debug-value ${bm25Hit}">${d.bm25_chunks}</span>
-      </div>
-      <div class="debug-row">
-        <span class="debug-label">RRF output</span>
-        <span class="debug-value highlight">${d.rrf_chunks}</span>
-      </div>
-      <div class="debug-row">
-        <span class="debug-label">Context sent</span>
-        <span class="debug-value">${d.context_chars.toLocaleString()} chars</span>
+        <span class="debug-value ${vecHit}">${d.vec_chunks || 0}</span>
       </div>
     </div>
 
-    <!-- ④ LLM -->
     <div class="debug-section">
-      <div class="debug-section-title">④ LLM Response</div>
-      ${fastPath ? `<div class="debug-row"><span class="debug-label">LLM called</span><span class="debug-value good">No — $0</span></div>` : `
-        <div class="debug-row">
-          <span class="debug-label">Tokens in</span>
-          <span class="debug-value warn">${d.tokens_in.toLocaleString()}</span>
-        </div>
-        <div class="debug-row">
-          <span class="debug-label">Tokens out</span>
-          <span class="debug-value warn">${d.tokens_out.toLocaleString()}</span>
-        </div>
-        <div class="debug-row">
-          <span class="debug-label">Total</span>
-          <span class="debug-value highlight">${(d.tokens_in + d.tokens_out).toLocaleString()} tokens</span>
-        </div>
-      `}
-    </div>
-
-    <!-- ⑤ Cost & Speed -->
-    <div class="debug-section">
-      <div class="debug-section-title">⑤ Cost & Latency</div>
+      <div class="debug-section-title">③ Cost & Latency</div>
       <div class="cost-display">${costStr}</div>
-      <div class="debug-row">
-        <span class="debug-label">API calls</span>
-        <span class="debug-value">${apiCalls}</span>
-      </div>
-      <div class="latency-row">
-        <div class="latency-chip">Total <span>${Math.round(d.total_ms)}ms</span></div>
-        ${d.tokens_in > 0 ? `<div class="latency-chip">LLM <span>~${Math.round(d.total_ms * 0.8)}ms</span></div>` : ''}
+      <div class="debug-row" style="margin-top:12px">
+        <span class="debug-label">Total Latency</span>
+        <span class="debug-value highlight" style="color:hsl(var(--color-amber))">${Math.round(d.total_ms || 0)}ms</span>
       </div>
     </div>
   `;
@@ -825,7 +717,6 @@ function escapeHtml(str) {
   return d.innerHTML;
 }
 
-// Auto-focus input
 inputEl.focus();
 </script>
 </body>
