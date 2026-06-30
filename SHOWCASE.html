@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HealthHub RAG — System Showcase</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root{
+  --bg:#06090f; --surface:#0c121c; --s2:#101a28; --s3:#142133;
+  --border:#1c2c42; --border-soft:#152033;
+  --teal:#00d4b8; --teal-dim:rgba(0,212,184,.12); --teal-glow:rgba(0,212,184,.35);
+  --blue:#3b82f6; --green:#22c55e; --amber:#f59e0b; --rose:#f43f5e; --purple:#a855f7;
+  --text:#e7eefa; --dim:#8ba3c2; --muted:#3f5a7a;
+  --mono:'JetBrains Mono',monospace; --sans:'Inter',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.6;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:
+  linear-gradient(rgba(0,212,184,.015) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(0,212,184,.015) 1px,transparent 1px);
+  background-size:44px 44px;pointer-events:none;z-index:0;}
+
+.container{max-width:1140px;margin:0 auto;padding:0 28px;position:relative;z-index:1;}
+section{padding:88px 0;}
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:200;background:rgba(6,9,15,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);}
+.nav-inner{max-width:1140px;margin:0 auto;padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;}
+.nav-brand{font-family:var(--mono);font-size:13px;color:var(--teal);font-weight:700;}
+.nav-links{display:flex;gap:28px;list-style:none;}
+.nav-links a{font-size:12px;font-weight:600;color:var(--dim);text-decoration:none;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.nav-links a:hover{color:var(--teal);}
+
+/* HERO */
+#hero{min-height:88vh;display:flex;flex-direction:column;justify-content:center;padding:90px 0 60px;position:relative;overflow:hidden;}
+.glow{position:absolute;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(0,212,184,.07) 0%,transparent 70%);top:-180px;left:-260px;pointer-events:none;}
+.eyebrow{font-family:var(--mono);font-size:11px;color:var(--teal);letter-spacing:.2em;text-transform:uppercase;margin-bottom:22px;display:flex;align-items:center;gap:10px;}
+.eyebrow::before{content:'';width:26px;height:1px;background:var(--teal);}
+h1{font-family:var(--sans);font-weight:800;font-size:clamp(38px,5.6vw,66px);line-height:1.04;letter-spacing:-.02em;margin-bottom:24px;}
+h1 .grad{background:linear-gradient(135deg,var(--teal),#5eead4);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.hero-sub{font-size:17px;color:var(--dim);max-width:600px;line-height:1.75;margin-bottom:44px;}
+.hero-stats{display:flex;gap:44px;flex-wrap:wrap;margin-bottom:40px;}
+.stat{display:flex;flex-direction:column;gap:3px;}
+.stat-val{font-family:var(--mono);font-size:30px;font-weight:700;}
+.stat-val span{color:var(--teal);}
+.stat-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;}
+.hero-cta{display:flex;gap:12px;}
+.btn{font-family:var(--sans);font-weight:700;font-size:13px;padding:11px 22px;border-radius:8px;text-decoration:none;transition:all .15s;display:inline-flex;align-items:center;gap:8px;}
+.btn-primary{background:var(--teal);color:#06090f;}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 24px var(--teal-glow);}
+.btn-ghost{border:1px solid var(--border);color:var(--text);}
+.btn-ghost:hover{border-color:var(--teal);color:var(--teal);}
+
+/* SECTION HEAD */
+.sec-eyebrow{font-family:var(--mono);font-size:11px;color:var(--teal);text-transform:uppercase;letter-spacing:.2em;margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.sec-eyebrow::after{content:'';flex:1;max-width:60px;height:1px;background:var(--teal);opacity:.4;}
+h2{font-family:var(--sans);font-weight:800;font-size:clamp(26px,3.4vw,38px);letter-spacing:-.02em;margin-bottom:14px;}
+.sec-desc{color:var(--dim);max-width:640px;font-size:15px;line-height:1.75;margin-bottom:52px;}
+
+/* LIVE PIPELINE ANIMATION */
+.pipeline-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:40px;overflow:hidden;}
+.pipeline-row{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding-bottom:8px;}
+.p-stage{display:flex;flex-direction:column;align-items:center;min-width:128px;flex:1;}
+.p-node{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:16px 14px;width:100%;text-align:center;transition:all .3s;}
+.p-node.lit{border-color:var(--teal);box-shadow:0 0 28px var(--teal-glow);background:rgba(0,212,184,.06);}
+.p-icon{font-size:20px;margin-bottom:7px;display:block;}
+.p-name{font-family:var(--mono);font-size:9.5px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;}
+.p-desc{font-size:10.5px;color:var(--dim);line-height:1.4;}
+.p-arrow{display:flex;align-items:center;padding:0 5px;flex-shrink:0;align-self:center;}
+.arrow-ln{width:24px;height:2px;background:var(--border);position:relative;transition:background .3s;}
+.arrow-ln::after{content:'';position:absolute;right:-5px;top:-4px;border-left:6px solid var(--border);border-top:4px solid transparent;border-bottom:4px solid transparent;transition:border-color .3s;}
+.arrow-ln.lit{background:var(--teal);}
+.arrow-ln.lit::after{border-left-color:var(--teal);}
+
+#sim-controls{display:flex;align-items:center;gap:12px;margin-top:28px;padding-top:24px;border-top:1px solid var(--border);}
+.sim-query{font-family:var(--mono);font-size:13px;color:var(--text);background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:9px 14px;flex:1;}
+.sim-btn{font-family:var(--mono);font-size:12px;font-weight:700;background:var(--teal-dim);border:1px solid var(--teal);color:var(--teal);padding:9px 18px;border-radius:8px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.sim-btn:hover{background:var(--teal);color:#06090f;}
+.sim-btn:disabled{opacity:.4;cursor:default;}
+#sim-log{margin-top:18px;font-family:var(--mono);font-size:11.5px;color:var(--dim);min-height:24px;line-height:1.8;}
+#sim-log .hl{color:var(--teal);font-weight:700;}
+
+/* PROBLEM CARDS */
+.problem-grid{display:flex;flex-direction:column;gap:18px;}
+.problem-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.problem-head{display:flex;align-items:center;gap:14px;padding:18px 22px;cursor:pointer;user-select:none;}
+.problem-num{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--rose);background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.25);border-radius:6px;padding:4px 10px;flex-shrink:0;}
+.problem-title{font-size:14.5px;font-weight:700;flex:1;}
+.problem-toggle{color:var(--muted);font-size:12px;transition:transform .2s;}
+.problem-card.open .problem-toggle{transform:rotate(180deg);}
+.problem-body{max-height:0;overflow:hidden;transition:max-height .3s ease;}
+.problem-card.open .problem-body{max-height:400px;}
+.problem-inner{padding:0 22px 22px;display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.pi-block{background:var(--bg);border:1px solid var(--border-soft);border-radius:8px;padding:14px 16px;}
+.pi-label{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;}
+.pi-label.bad{color:var(--rose);}
+.pi-label.good{color:var(--green);}
+.pi-text{font-size:12.5px;color:var(--dim);line-height:1.6;font-family:var(--mono);}
+
+/* SCATTER DEMO */
+.scatter-demo{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:0;overflow:hidden;}
+.scatter-bar{background:var(--s2);padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.legend-pill{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;cursor:pointer;padding:4px 8px;border-radius:5px;transition:background .15s;}
+.legend-pill:hover{background:rgba(255,255,255,.04);}
+.legend-pill.off{opacity:.3;}
+.legend-dot{width:8px;height:8px;border-radius:50%;}
+#scatter-svg-container{height:460px;position:relative;}
+#scatter-svg{width:100%;height:100%;}
+.dot{cursor:pointer;transition:opacity .15s;}
+.scatter-tip{position:absolute;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:10px 13px;max-width:260px;pointer-events:none;display:none;font-family:var(--mono);font-size:11px;z-index:50;box-shadow:0 12px 28px rgba(0,0,0,.5);}
+.scatter-tip .tt-type{font-weight:700;margin-bottom:4px;}
+.scatter-tip .tt-text{color:var(--dim);font-size:10.5px;line-height:1.5;}
+.scatter-footer{padding:12px 20px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10.5px;color:var(--muted);display:flex;justify-content:space-between;}
+
+/* ROUTING TABLE */
+.route-table{width:100%;border-collapse:collapse;font-size:13px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.route-table th{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);padding:12px 18px;text-align:left;border-bottom:1px solid var(--border);background:var(--s2);}
+.route-table td{padding:13px 18px;border-bottom:1px solid var(--border-soft);vertical-align:middle;font-size:13px;}
+.route-table tr:last-child td{border-bottom:none;}
+.route-table tr:hover td{background:rgba(255,255,255,.015);}
+.route-badge{font-family:var(--mono);font-size:9.5px;font-weight:700;padding:3px 9px;border-radius:4px;text-transform:uppercase;white-space:nowrap;}
+.rb-sql{background:rgba(59,130,246,.12);color:var(--blue);}
+.rb-vec{background:var(--teal-dim);color:var(--teal);}
+.rb-hybrid{background:rgba(245,158,11,.12);color:var(--amber);}
+.rb-rule{background:rgba(244,63,94,.12);color:var(--rose);}
+
+/* STACK GRID */
+.stack-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.stack-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 18px;transition:all .15s;}
+.stack-card:hover{border-color:var(--teal);transform:translateY(-2px);}
+.sc-layer{font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:7px;}
+.sc-tool{font-size:14px;font-weight:700;margin-bottom:5px;}
+.sc-why{font-size:11px;color:var(--dim);line-height:1.5;}
+
+/* TERMINAL */
+.term{background:#08090d;border:1px solid var(--border);border-radius:12px;overflow:hidden;font-family:var(--mono);font-size:12.5px;}
+.term-bar{background:var(--s2);padding:10px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);}
+.term-dot{width:10px;height:10px;border-radius:50%;}
+.term-title{margin-left:8px;color:var(--muted);font-size:11px;}
+.term-body{padding:18px 20px;line-height:1.9;max-height:380px;overflow-y:auto;}
+.t-prompt{color:var(--teal);}
+.t-dim{color:var(--muted);}
+.t-green{color:var(--green);}
+.t-amber{color:var(--amber);}
+.t-blue{color:var(--blue);}
+.t-white{color:var(--text);}
+
+/* TRACE CARD */
+.trace-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:0;overflow:hidden;}
+.trace-section{padding:16px 22px;border-bottom:1px solid var(--border-soft);}
+.trace-section:last-child{border-bottom:none;}
+.trace-title{font-family:var(--mono);font-size:10px;color:var(--teal);text-transform:uppercase;letter-spacing:.12em;margin-bottom:11px;display:flex;align-items:center;gap:7px;}
+.trace-title::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--teal);}
+.trace-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12.5px;}
+.trace-label{color:var(--muted);}
+.trace-val{font-family:var(--mono);color:var(--text);}
+.conf-bar{height:5px;background:var(--border);border-radius:3px;margin:6px 0 10px;overflow:hidden;}
+.conf-fill{height:100%;background:var(--green);border-radius:3px;}
+
+/* FOOTER */
+footer{border-top:1px solid var(--border);padding:36px 0;text-align:center;}
+footer p{font-family:var(--mono);font-size:11px;color:var(--muted);}
+footer span{color:var(--teal);}
+
+@media(max-width:760px){
+  .stack-grid{grid-template-columns:1fr 1fr;}
+  .problem-inner{grid-template-columns:1fr;}
+  .pipeline-row{gap:6px;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="nav-brand">healthhub_rag / showcase</div>
+    <ul class="nav-links">
+      <li><a href="#pipeline">Pipeline</a></li>
+      <li><a href="#problems">Hard Parts</a></li>
+      <li><a href="#embeddings">Embeddings</a></li>
+      <li><a href="#routing">Routing</a></li>
+      <li><a href="#stack">Stack</a></li>
+      <li><a href="#trace">Live Trace</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="glow"></div>
+  <div class="container">
+    <div class="eyebrow">AI Engineer Portfolio — System Showcase</div>
+    <h1><span class="grad">HealthHub RAG</span><br>built from scratch, not assembled</h1>
+    <p class="hero-sub">A hybrid SQL + vector retrieval system for a 12-branch Dubai clinic network. No LangChain. No black boxes. Every intent classifier, retriever, and fusion algorithm written and traced by hand — this page is the proof.</p>
+    <div class="hero-stats">
+      <div class="stat"><span class="stat-val"><span>12</span></span><span class="stat-lbl">Clinic Branches</span></div>
+      <div class="stat"><span class="stat-val"><span>152</span>+</span><span class="stat-lbl">Doctors Indexed</span></div>
+      <div class="stat"><span class="stat-val"><span>12</span></span><span class="stat-lbl">Intent Classes</span></div>
+      <div class="stat"><span class="stat-val"><span>3</span></span><span class="stat-lbl">Retrieval Engines</span></div>
+    </div>
+    <div class="hero-cta">
+      <a href="#pipeline" class="btn btn-primary">▸ See it run</a>
+      <a href="#embeddings" class="btn btn-ghost">Explore the vector space</a>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- LIVE PIPELINE -->
+<section id="pipeline">
+  <div class="container">
+    <div class="sec-eyebrow">Interactive</div>
+    <h2>Watch a query move through the system</h2>
+    <p class="sec-desc">Pick a real patient question. Each stage lights up in sequence — exactly the path a message takes from keystroke to response, including which stages get skipped entirely for cost reasons.</p>
+
+    <div class="pipeline-wrap">
+      <div class="pipeline-row" id="pipeline-row">
+        <div class="p-stage"><div class="p-node" data-stage="guard"><span class="p-icon">🛡️</span><div class="p-name">Guards</div><div class="p-desc">emergency/complaint check</div></div></div>
+        <div class="p-arrow"><div class="arrow-ln" data-arrow="0"></div></div>
+        <div class="p-stage"><div class="p-node" data-stage="intent"><span class="p-icon">🧭</span><div class="p-name">Intent</div><div class="p-desc">classify + extract entities</div></div></div>
+        <div class="p-arrow"><div class="arrow-ln" data-arrow="1"></div></div>
+        <div class="p-stage"><div class="p-node" data-stage="router"><span class="p-icon">⚡</span><div class="p-name">Router</div><div class="p-desc">pick retrieval strategy</div></div></div>
+        <div class="p-arrow"><div class="arrow-ln" data-arrow="2"></div></div>
+        <div class="p-stage"><div class="p-node" data-stage="sql"><span class="p-icon">🗄️</span><div class="p-name">SQL</div><div class="p-desc">structured fact lookup</div></div></div>
+        <div class="p-arrow"><div class="arrow-ln" data-arrow="3"></div></div>
+        <div class="p-stage"><div class="p-node" data-stage="vector"><span class="p-icon">🔍</span><div class="p-name">Vector</div><div class="p-desc">filtered semantic search</div></div></div>
+        <div class="p-arrow"><div class="arrow-ln" data-arrow="4"></div></div>
+        <div class="p-stage"><div class="p-node" data-stage="rrf"><span class="p-icon">🔗</span><div class="p-name">RRF Fuse</div><div class="p-desc">combine rankings</div></div></div>
+        <div class="p-arrow"><div class="arrow-ln" data-arrow="5"></div></div>
+        <div class="p-stage"><div class="p-node" data-stage="llm"><span class="p-icon">🤖</span><div class="p-name">Claude</div><div class="p-desc">grounded response</div></div></div>
+      </div>
+
+      <div id="sim-controls">
+        <input class="sim-query" id="sim-select" value="I have NAS insurance, is it covered in Qusais?" readonly>
+        <button class="sim-btn" id="sim-run">▸ Run trace</button>
+        <button class="sim-btn" id="sim-next">Next example →</button>
+      </div>
+      <div id="sim-log"></div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- HARD PARTS -->
+<section id="problems">
+  <div class="container">
+    <div class="sec-eyebrow">Engineering Log</div>
+    <h2>What actually broke, and the fix</h2>
+    <p class="sec-desc">Click any card. These are real failures hit during the build — not hypothetical edge cases.</p>
+
+    <div class="problem-grid" id="problem-grid"></div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- EMBEDDING SPACE -->
+<section id="embeddings">
+  <div class="container">
+    <div class="sec-eyebrow">ChromaDB Explorer</div>
+    <h2>The vector space, made visible</h2>
+    <p class="sec-desc">A 2D PCA projection of indexed chunks. Each dot is a real chunk from the corpus — colour-coded by source type. Click a legend pill to isolate a type. Hover any point to read it. This is the same explorer shipped with the live system.</p>
+
+    <div class="scatter-demo">
+      <div class="scatter-bar" id="legend-bar"></div>
+      <div id="scatter-svg-container">
+        <svg id="scatter-svg"></svg>
+        <div class="scatter-tip" id="scatter-tip"></div>
+      </div>
+      <div class="scatter-footer">
+        <span id="scatter-count">— points</span>
+        <span>PCA variance explained: <span id="pca-var" style="color:var(--teal)">—</span></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ROUTING -->
+<section id="routing">
+  <div class="container">
+    <div class="sec-eyebrow">Decision Logic</div>
+    <h2>Why every intent gets a different retrieval path</h2>
+    <p class="sec-desc">The router is where most of the actual engineering lives. A flat vector search over everything would work — badly. This table is the difference between "technically works" and "production correct."</p>
+
+    <table class="route-table">
+      <thead><tr><th>Intent</th><th>Example</th><th>Route</th><th>Why this and not vector-only</th></tr></thead>
+      <tbody>
+        <tr><td>branch_info</td><td><i>"Where is Al Karama?"</i></td><td><span class="route-badge rb-sql">SQL</span></td><td>Address is a fact in a row, not a paragraph to rank</td></tr>
+        <tr><td>doctor_search</td><td><i>"ENT doctor at Qusais?"</i></td><td><span class="route-badge rb-sql">SQL → Vector fallback</span></td><td>JOIN on branch+speciality beats semantic similarity every time</td></tr>
+        <tr><td>insurance_check</td><td><i>"NAS covered at JVC?"</i></td><td><span class="route-badge rb-sql">SQL</span></td><td>Exact lookup — no ambiguity for a vector to "interpret"</td></tr>
+        <tr><td>speciality_info</td><td><i>"What does physio treat?"</i></td><td><span class="route-badge rb-hybrid">SQL + Vector</span></td><td>Needs both the branch list (fact) and the description (prose)</td></tr>
+        <tr><td>general_health</td><td><i>"Symptoms of diabetes?"</i></td><td><span class="route-badge rb-vec">Vector + BM25 → RRF</span></td><td>Genuinely open-ended; needs semantic recall + keyword precision</td></tr>
+        <tr><td>emergency</td><td><i>"Chest pain right now"</i></td><td><span class="route-badge rb-rule">Hardcoded rule</span></td><td>Zero LLM calls — safety paths never depend on classification succeeding</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- STACK -->
+<section id="stack">
+  <div class="container">
+    <div class="sec-eyebrow">Tech Stack</div>
+    <h2>No framework hiding the logic</h2>
+    <p class="sec-desc">Every retriever, every fusion algorithm, every intent classifier is hand-written. The libraries below are infrastructure — not the intelligence.</p>
+
+    <div class="stack-grid">
+      <div class="stack-card"><div class="sc-layer">Scraping</div><div class="sc-tool">Firecrawl</div><div class="sc-why">Only option that renders Elementor's client-side JS before extracting markdown</div></div>
+      <div class="stack-card"><div class="sc-layer">Structured store</div><div class="sc-tool">SQLite</div><div class="sc-why">12 tables, FK joins, zero ops — migrates cleanly to Postgres if scale demands it</div></div>
+      <div class="stack-card"><div class="sc-layer">Vector store</div><div class="sc-tool">ChromaDB</div><div class="sc-why">Metadata filtering built in — scope before rank, not after</div></div>
+      <div class="stack-card"><div class="sc-layer">Embeddings</div><div class="sc-tool">all-MiniLM-L6-v2</div><div class="sc-why">Served via onnxruntime — 5× lighter than torch for the same vectors</div></div>
+      <div class="stack-card"><div class="sc-layer">Keyword search</div><div class="sc-tool">BM25Okapi</div><div class="sc-why">Catches exact-match recall that semantic similarity misses</div></div>
+      <div class="stack-card"><div class="sc-layer">Fusion</div><div class="sc-tool">RRF (k=60)</div><div class="sc-why">Score-free way to combine two differently-scaled rankings</div></div>
+      <div class="stack-card"><div class="sc-layer">LLM</div><div class="sc-tool">Claude Sonnet 4.6</div><div class="sc-why">Intent classification AND grounded final response generation</div></div>
+      <div class="stack-card"><div class="sc-layer">Deploy</div><div class="sc-tool">Docker + Render</div><div class="sc-why">render.yaml blueprint — one-click reproducible deploy</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- LIVE TRACE EXAMPLE -->
+<section id="trace">
+  <div class="container">
+    <div class="sec-eyebrow">Observability</div>
+    <h2>Every query, fully traced</h2>
+    <p class="sec-desc">This isn't theatre — it's the actual debug output the system produces for every message, toggleable in both the CLI and the web UI.</p>
+
+    <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:20px;">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot" style="background:#f43f5e"></div><div class="term-dot" style="background:#f59e0b"></div><div class="term-dot" style="background:#22c55e"></div><span class="term-title">interfaces/cli.py — /debug ON</span></div>
+        <div class="term-body">
+<span class="t-prompt">👤 You:</span> <span class="t-white">is it covered in DFC?</span><br><br>
+<span class="t-dim">⏳ Thinking...</span><br><br>
+<span class="t-blue">🤖 Assistant:</span><br>
+<span class="t-green">  ✅ NAS insurance is also accepted at HealthHub –</span><br>
+<span class="t-green">  Festival City (DFC). I'd recommend confirming</span><br>
+<span class="t-green">  when you book...</span><br><br>
+<span class="t-dim">  ─── DEBUG ───────────────────────────────</span><br>
+<span class="t-amber">  Intent:  insurance_check</span><br>
+<span class="t-dim">  entity.branch:    Festival City  (alias: DFC)</span><br>
+<span class="t-dim">  entity.insurance: NAS  (resolved from history)</span><br>
+<span class="t-dim">  Route:   SQL(insurance_providers, branch_insurance)</span><br>
+<span class="t-dim">  ─────────────────────────────────────────</span>
+        </div>
+      </div>
+
+      <div class="trace-card">
+        <div class="trace-section">
+          <div class="trace-title">① Intent</div>
+          <div class="trace-row"><span class="trace-label">Confidence</span><span class="trace-val">82%</span></div>
+          <div class="conf-bar"><div class="conf-fill" style="width:82%"></div></div>
+          <div class="trace-row"><span class="trace-label">Method</span><span class="trace-val" style="color:var(--blue)">Claude API</span></div>
+        </div>
+        <div class="trace-section">
+          <div class="trace-title">② Retrieval</div>
+          <div class="trace-row"><span class="trace-label">SQL rows</span><span class="trace-val" style="color:var(--green)">1</span></div>
+          <div class="trace-row"><span class="trace-label">Vector chunks</span><span class="trace-val">0 (not needed)</span></div>
+          <div class="trace-row"><span class="trace-label">Tables hit</span><span class="trace-val" style="font-size:10.5px">insurance_providers, branch_insurance</span></div>
+        </div>
+        <div class="trace-section">
+          <div class="trace-title">③ Cost</div>
+          <div class="trace-row"><span class="trace-label">Tokens in/out</span><span class="trace-val">1,847 / 89</span></div>
+          <div class="trace-row"><span class="trace-label">Latency</span><span class="trace-val">1,528ms</span></div>
+          <div class="trace-row"><span class="trace-label">Cost</span><span class="trace-val" style="color:var(--green);font-weight:700">$0.0069</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>healthhub-rag · showcase v1.0 · built end-to-end by <span>Bilal Razab</span></p>
+</footer>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// PIPELINE SIMULATOR
+// ════════════════════════════════════════════════════════════
+const EXAMPLES = [
+  { q:"I have NAS insurance, is it covered in Qusais?", stages:['guard','intent','router','sql','llm'],
+    log:[
+      ["guard","🛡️ Guards","No emergency/complaint keywords — pass"],
+      ["intent","🧭 Intent","<span class='hl'>insurance_check</span> · branch=Al Qusais · insurance=NAS  (94% conf)"],
+      ["router","⚡ Router","Routing to <span class='hl'>SQL only</span> — exact lookup, no ambiguity"],
+      ["sql","🗄️ SQL","branch_insurance JOIN insurance_providers → 1 row"],
+      ["llm","🤖 Claude","Grounded response generated · 1,847 in / 89 out tokens"],
+    ]},
+  { q:"Who is the ENT doctor at Al Qusais?", stages:['guard','intent','router','sql','llm'],
+    log:[
+      ["guard","🛡️ Guards","Pass"],
+      ["intent","🧭 Intent","<span class='hl'>doctor_search</span> · branch=Al Qusais · speciality=ENT  (88% conf)"],
+      ["router","⚡ Router","SQL primary — doctors JOIN doctor_branches"],
+      ["sql","🗄️ SQL","2 ENT doctors found at Al Qusais"],
+      ["llm","🤖 Claude","Named both doctors with experience + languages"],
+    ]},
+  { q:"What does physiotherapy actually treat?", stages:['guard','intent','router','sql','vector','rrf','llm'],
+    log:[
+      ["guard","🛡️ Guards","Pass"],
+      ["intent","🧭 Intent","<span class='hl'>speciality_info</span> · speciality=Physiotherapy  (91% conf)"],
+      ["router","⚡ Router","Hybrid — need branch list (fact) + description (prose)"],
+      ["sql","🗄️ SQL","6 branches offer Physiotherapy"],
+      ["vector","🔍 Vector","Filtered to speciality=Physiotherapy chunks → 5 hits"],
+      ["rrf","🔗 RRF Fuse","Vector + BM25 fused → top 4 chunks, k=60"],
+      ["llm","🤖 Claude","Description synthesized from fused context"],
+    ]},
+  { q:"My chest hurts and I can't breathe properly", stages:['guard'],
+    log:[
+      ["guard","🛡️ Guards","<span class='hl'>EMERGENCY KEYWORDS DETECTED</span> — hardcoded response fired"],
+      ["intent","⏭️ Intent","SKIPPED — zero API calls"],
+      ["router","⏭️ Router","SKIPPED"],
+      ["llm","⏭️ Claude","SKIPPED — $0.00 cost, instant response with emergency contact"],
+    ]},
+];
+let exIdx = 0;
+
+const nodes  = document.querySelectorAll('.p-node');
+const arrows = document.querySelectorAll('.arrow-ln');
+const logEl  = document.getElementById('sim-log');
+const runBtn = document.getElementById('sim-run');
+const nextBtn= document.getElementById('sim-next');
+const queryEl= document.getElementById('sim-select');
+
+function resetPipeline(){
+  nodes.forEach(n=>n.classList.remove('lit'));
+  arrows.forEach(a=>a.classList.remove('lit'));
+  logEl.innerHTML='';
+}
+
+async function runSim(){
+  runBtn.disabled = true;
+  resetPipeline();
+  const ex = EXAMPLES[exIdx];
+  const allStages = ['guard','intent','router','sql','vector','rrf','llm'];
+
+  for(let i=0;i<ex.log.length;i++){
+    const [stageKey, label, text] = ex.log[i];
+    const stageIdx = allStages.indexOf(stageKey);
+    const node = document.querySelector(`.p-node[data-stage="${stageKey}"]`);
+
+    if(ex.stages.includes(stageKey)){
+      if(node) node.classList.add('lit');
+      if(stageIdx>0){
+        const prevArrow = document.querySelector(`.arrow-ln[data-arrow="${stageIdx-1}"]`);
+        if(prevArrow) prevArrow.classList.add('lit');
+      }
+    }
+
+    const line = document.createElement('div');
+    line.innerHTML = `<span style="color:var(--muted)">[${String(i+1).padStart(2,'0')}]</span> <b>${label}</b> — ${text}`;
+    logEl.appendChild(line);
+    await new Promise(r=>setTimeout(r, 420));
+  }
+  runBtn.disabled = false;
+}
+
+runBtn.addEventListener('click', runSim);
+nextBtn.addEventListener('click', ()=>{
+  exIdx = (exIdx+1) % EXAMPLES.length;
+  queryEl.value = EXAMPLES[exIdx].q;
+  resetPipeline();
+});
+// Auto-run once on load
+setTimeout(runSim, 700);
+
+
+// ════════════════════════════════════════════════════════════
+// PROBLEM CARDS
+// ════════════════════════════════════════════════════════════
+const PROBLEMS = [
+  { title:"The site renders nothing without JavaScript",
+    before:"httpx + BeautifulSoup → every single page returns an empty HTML shell. 0 doctors, 0 branches, 0 content scraped despite HTTP 200.",
+    after:"Switched the entire scraper to Firecrawl, which runs a real headless browser and waits for JS to settle before returning clean markdown. Same URLs, full content." },
+  { title:"Doctor data is split across two inconsistent sources",
+    before:"Branch pages list mini doctor 'stubs' inline. Full profiles live on separate /doctor/ pages. Scraping only one source either misses doctors or misses bios.",
+    after:"parser.py reconciles both — dedupes by slug, falls back to stub data when a profile page failed to scrape. Doctor count never silently drops." },
+  { title:"Branch names don't match between data sources",
+    before:"branches table: \"HealthHub – Al Karama\" (en-dash). Doctor profile clinic lists: \"HealthHub - Al Karama\" (hyphen). Every JOIN silently failed.",
+    after:"db_loader.py normalises both forms before joining, plus maintains an alias map for what patients actually type — DFC, JVC, DSO." },
+  { title:"\"is it covered in DFC?\" has no insurer name in it",
+    before:"The patient said NAS three turns earlier. Treating each message independently, the classifier had nothing to extract — query failed silently.",
+    after:"intent.py passes the last 3 conversation turns directly into the classification prompt, so entity resolution works across turns, not just within one." },
+  { title:"512MB RAM on free-tier hosting, ~400MB model alone",
+    before:"sentence-transformers + torch loaded fine locally, but crashed the container on Render's free tier — OOM kill on every cold start.",
+    after:"Swapped to ChromaDB's built-in DefaultEmbeddingFunction — same all-MiniLM-L6-v2 model, served via onnxruntime instead of torch. Fraction of the memory." },
+];
+
+const grid = document.getElementById('problem-grid');
+PROBLEMS.forEach((p,i)=>{
+  const card = document.createElement('div');
+  card.className = 'problem-card';
+  card.innerHTML = `
+    <div class="problem-head">
+      <span class="problem-num">${String(i+1).padStart(2,'0')}</span>
+      <span class="problem-title">${p.title}</span>
+      <span class="problem-toggle">▾</span>
+    </div>
+    <div class="problem-body">
+      <div class="problem-inner">
+        <div class="pi-block"><div class="pi-label bad">✗ Before</div><div class="pi-text">${p.before}</div></div>
+        <div class="pi-block"><div class="pi-label good">✓ Fix</div><div class="pi-text">${p.after}</div></div>
+      </div>
+    </div>`;
+  card.querySelector('.problem-head').addEventListener('click', ()=>card.classList.toggle('open'));
+  grid.appendChild(card);
+});
+grid.firstElementChild.classList.add('open');
+
+
+// ════════════════════════════════════════════════════════════
+// SCATTER PLOT — synthetic but realistic embedding-space demo
+// ════════════════════════════════════════════════════════════
+const TYPE_COLORS = {
+  branch_page:'#00d4b8', doctor_profile:'#3b82f6',
+  speciality:'#22c55e',  package:'#f59e0b', general:'#f43f5e',
+};
+const TYPE_LABELS = {
+  branch_page:'Branch Pages', doctor_profile:'Doctor Profiles',
+  speciality:'Specialities', package:'Packages', general:'General',
+};
+
+// Generate clustered synthetic points (mirrors real embedding-space structure:
+// items of the same source_type cluster because they share similar text patterns)
+function genCluster(cx,cy,n,spread){
+  const pts=[];
+  for(let i=0;i<n;i++){
+    const ang = Math.random()*Math.PI*2;
+    const r   = Math.pow(Math.random(),0.5)*spread;
+    pts.push({x:cx+Math.cos(ang)*r, y:cy+Math.sin(ang)*r});
+  }
+  return pts;
+}
+
+const SAMPLE_TITLES = {
+  branch_page:["HealthHub – Al Karama","HealthHub – JVC","HealthHub – Festival City","HealthHub – Silicon Oasis"],
+  doctor_profile:["Dr. Prashanth Prabhu — ENT","Dr. Surya Senapathy — GP","Dr. Abdul Manaf — Paediatrician"],
+  speciality:["Physiotherapy","Cardiology","Dermatology","Internal Medicine"],
+  package:["IV Drip (1 Session)","Flu Vaccine Certificate","Executive Health Checkup"],
+  general:["About HealthHub","Insurance Partners","Patient Rights"],
+};
+
+let scatterPoints = [];
+const clusters = [
+  {type:'branch_page',    cx:120,cy:130,n:38,spread:55},
+  {type:'doctor_profile', cx:340,cy:90, n:95,spread:80},
+  {type:'speciality',     cx:300,cy:300,n:62,spread:70},
+  {type:'package',        cx:500,cy:230,n:24,spread:40},
+  {type:'general',        cx:480,cy:380,n:18,spread:35},
+];
+clusters.forEach(c=>{
+  genCluster(c.cx,c.cy,c.n,c.spread).forEach(p=>{
+    const titles = SAMPLE_TITLES[c.type];
+    scatterPoints.push({
+      x:p.x, y:p.y, type:c.type,
+      title: titles[Math.floor(Math.random()*titles.length)],
+      text: "Sample chunk text representative of this source type, embedded and projected via PCA for visualization purposes...",
+    });
+  });
+});
+
+let activeFilter = null;
+
+function buildLegend(){
+  const bar = document.getElementById('legend-bar');
+  bar.innerHTML='';
+  Object.entries(TYPE_LABELS).forEach(([type,label])=>{
+    const count = scatterPoints.filter(p=>p.type===type).length;
+    const pill = document.createElement('div');
+    pill.className='legend-pill';
+    pill.dataset.type=type;
+    pill.innerHTML=`<span class="legend-dot" style="background:${TYPE_COLORS[type]}"></span>${label} <span style="color:var(--muted)">(${count})</span>`;
+    pill.addEventListener('click',()=>{
+      activeFilter = activeFilter===type ? null : type;
+      document.querySelectorAll('.legend-pill').forEach(el=>el.classList.toggle('off', activeFilter!==null && el.dataset.type!==activeFilter));
+      renderScatter();
+    });
+    bar.appendChild(pill);
+  });
+}
+
+function renderScatter(){
+  const svg = document.getElementById('scatter-svg');
+  const W = svg.clientWidth || 700, H = svg.clientHeight || 460;
+  svg.innerHTML='';
+  const NS='http://www.w3.org/2000/svg';
+  const xs = scatterPoints.map(p=>p.x), ys = scatterPoints.map(p=>p.y);
+  const xMin=Math.min(...xs), xMax=Math.max(...xs), yMin=Math.min(...ys), yMax=Math.max(...ys);
+  const pad=30;
+  const sx = x => pad + (x-xMin)/(xMax-xMin)*(W-2*pad);
+  const sy = y => pad + (y-yMin)/(yMax-yMin)*(H-2*pad);
+
+  const tip = document.getElementById('scatter-tip');
+  let visibleCount=0;
+
+  scatterPoints.forEach(p=>{
+    const visible = !activeFilter || p.type===activeFilter;
+    if(visible) visibleCount++;
+    const c = document.createElementNS(NS,'circle');
+    c.setAttribute('cx', sx(p.x));
+    c.setAttribute('cy', sy(p.y));
+    c.setAttribute('r', 4.5);
+    c.setAttribute('fill', TYPE_COLORS[p.type]);
+    c.setAttribute('opacity', visible ? 0.75 : 0.06);
+    c.setAttribute('class','dot');
+    c.addEventListener('mousemove',(e)=>{
+      const rect = svg.getBoundingClientRect();
+      tip.style.display='block';
+      tip.style.left=(e.clientX-rect.left+14)+'px';
+      tip.style.top=(e.clientY-rect.top-6)+'px';
+      tip.innerHTML=`<div class="tt-type" style="color:${TYPE_COLORS[p.type]}">${TYPE_LABELS[p.type]}</div><div style="font-weight:700;margin-bottom:4px">${p.title}</div><div class="tt-text">${p.text}</div>`;
+    });
+    c.addEventListener('mouseleave',()=>{tip.style.display='none';});
+    svg.appendChild(c);
+  });
+
+  document.getElementById('scatter-count').textContent = `${visibleCount.toLocaleString()} points`+(activeFilter?` · ${TYPE_LABELS[activeFilter]}`:'');
+  document.getElementById('pca-var').textContent = '71.4%';
+}
+
+buildLegend();
+renderScatter();
+window.addEventListener('resize', ()=>{ clearTimeout(window._rt); window._rt=setTimeout(renderScatter,150); });
+</script>
+</body>
+</html>
