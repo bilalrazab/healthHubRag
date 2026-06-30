@@ -12,7 +12,7 @@ Built for a 12-branch Dubai clinic network · Hybrid SQL + Vector retrieval · W
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com)
 [![Render](https://img.shields.io/badge/Render-deployed-46E3B7?style=flat-square&logo=render&logoColor=white)](https://render.com)
 
-[**Live Demo**](#) · [**Interactive Showcase**](./SHOWCASE.html) · [**Architecture**](#architecture) · [**Setup**](#setup)
+[**Live Demo**](https://healthhub-rag.onrender.com) · [**Interactive Showcase**](https://bilalrazab.github.io/healthHubRag/SHOWCASE.html) · [**Architecture**](#architecture) · [**Setup**](#setup)
 
 </div>
 
@@ -169,7 +169,7 @@ A standalone interactive tool for inspecting exactly what's in the vector store 
 - **Browse Chunks** — paginated, filterable by source type / branch
 - **Semantic Search** — type any query, see the actual chunks ChromaDB returns with cosine similarity scores, before any RRF fusion or LLM involvement
 
-Run locally and open `/explorer`, or see it live in the [showcase page](./SHOWCASE.html).
+Run locally and open `/explorer`, or see it live in the [showcase page](https://bilalrazab.github.io/healthHubRag/SHOWCASE.html).
 
 ---
 
@@ -238,7 +238,3 @@ healthhub-rag/
 ---
 
 <div align="center">
-
-Built end-to-end as a portfolio piece — see the [interactive showcase](./SHOWCASE.html) for the visual architecture walkthrough.
-
-</div>
