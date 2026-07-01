@@ -2,7 +2,10 @@
 interfaces/api.py
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 FastAPI backend for HealthHub RAG.
-Includes ChromaDB Explorer endpoints at /explore/*
+
+Fix: STATIC_DIR now uses Path(__file__).resolve() so the
+absolute path is always correct regardless of working
+directory or Docker WORKDIR setting.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
 
@@ -18,13 +21,17 @@ from pydantic import BaseModel
 
 import sys
 
+# Resolve project root from this file's absolute location.
+# Works correctly in every environment:
+#   local:  D:/HealthHubRag/interfaces/api.py  → D:/HealthHubRag
+#   Docker: /app/interfaces/api.py             → /app
 ROOT_DIR   = Path(__file__).resolve().parent.parent
-STATIC_DIR = ROOT_DIR / "static"
+STATIC_DIR = ROOT_DIR / "interfaces" / "static"   # FIX: was ROOT_DIR / "static"
+
 sys.path.insert(0, str(ROOT_DIR))
 
-from chatbot.bot        import handle_message
-from chatbot.session    import clear as session_clear
-from interfaces.explore_api import router as explore_router
+from chatbot.bot     import handle_message
+from chatbot.session import clear as session_clear
 
 logging.basicConfig(
     level=logging.INFO,
@@ -32,6 +39,7 @@ logging.basicConfig(
 )
 log = logging.getLogger("api")
 
+# Log paths at startup — visible in Render logs, useful for debugging
 log.info("ROOT_DIR:   %s", ROOT_DIR)
 log.info("STATIC_DIR: %s  (exists=%s)", STATIC_DIR, STATIC_DIR.exists())
 
@@ -48,18 +56,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Explorer sub-router (/explore/*)
-app.include_router(explore_router)
-
-# ── Static files
+# Mount static files — always use the absolute resolved path
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
     log.info("Static files mounted OK")
 else:
-    log.error("STATIC_DIR not found at %s", STATIC_DIR)
+    log.error("STATIC_DIR not found — UI will not load. Expected: %s", STATIC_DIR)
 
 
-# ── Models ────────────────────────────────────────────────────
+# ── Request / Response models ──────────────────────────────────
 
 class ChatRequest(BaseModel):
     message:    str
@@ -93,13 +98,15 @@ class ChatResponse(BaseModel):
     debug:  DebugInfo | None = None
 
 
-# ── Endpoints ────────────────────────────────────────────────
+# ── Endpoints ──────────────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
+    """Serve the web chat UI."""
     index = STATIC_DIR / "index.html"
     if index.exists():
         return HTMLResponse(content=index.read_text(encoding="utf-8"))
+    # Detailed error so it's clear what path was looked up
     return HTMLResponse(
         content=(
             f"<h2>UI not found</h2>"
@@ -111,24 +118,15 @@ async def root():
     )
 
 
-@app.get("/explorer", response_class=HTMLResponse)
-async def explorer():
-    """Serve the ChromaDB interactive explorer UI."""
-    page = STATIC_DIR / "explore.html"
-    if page.exists():
-        return HTMLResponse(content=page.read_text(encoding="utf-8"))
-    return HTMLResponse("<h2>Explorer not found</h2>", status_code=404)
-
-
 @app.get("/health")
 async def health():
+    """Render health check."""
     return {
         "status":      "ok",
         "service":     "healthhub-rag",
         "static_dir":  str(STATIC_DIR),
         "static_ok":   STATIC_DIR.exists(),
         "index_ok":    (STATIC_DIR / "index.html").exists(),
-        "explorer_ok": (STATIC_DIR / "explore.html").exists(),
     }
 
 
@@ -176,4 +174,5 @@ async def chat(req: ChatRequest):
 @app.get("/session/clear")
 async def clear_session(session_id: str = "web-default"):
     session_clear(session_id)
+    log.info("Session cleared: %s", session_id[:8])
     return {"status": "cleared", "session_id": session_id}

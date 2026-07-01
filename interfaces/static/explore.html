@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChromaDB Explorer — HealthHub RAG</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+:root {
+  --bg:#060a10;--surface:#0d1520;--s2:#111d2e;--s3:#162236;
+  --border:#1a2d45;--teal:#00d4b8;--teal2:rgba(0,212,184,.12);
+  --blue:#3b82f6;--green:#22c55e;--amber:#f59e0b;--rose:#f43f5e;
+  --purple:#a855f7;--orange:#f97316;
+  --text:#e2eaf5;--dim:#7a93b2;--muted:#3d5a7a;
+  --mono:'JetBrains Mono','Cascadia Code','Fira Code',monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+.ct-branch_page{color:var(--teal)}.ct-doctor_profile{color:var(--blue)}
+.ct-speciality{color:var(--green)}.ct-package{color:var(--amber)}
+.ct-general{color:var(--rose)}.ct-unknown{color:var(--muted)}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px}
+#topbar{height:48px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:14px;flex-shrink:0;z-index:100}
+.tb-logo{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--teal);white-space:nowrap}
+.tb-sep{width:1px;height:24px;background:var(--border)}
+.tb-stat{display:flex;flex-direction:column;gap:1px}
+.tb-stat-val{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--text);line-height:1}
+.tb-stat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.tb-tabs{display:flex;gap:4px;margin-left:auto}
+.tab{padding:5px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);color:var(--dim);background:transparent;transition:all .15s}
+.tab:hover{border-color:var(--teal);color:var(--teal)}
+.tab.active{background:var(--teal2);border-color:var(--teal);color:var(--teal)}
+#layout{display:flex;height:calc(100vh - 48px)}
+#left{width:250px;flex-shrink:0;border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow:hidden}
+.panel-head{padding:10px 14px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--teal);text-transform:uppercase;letter-spacing:.12em;flex-shrink:0}
+.filter-section{padding:10px 12px;border-bottom:1px solid var(--border)}
+.filter-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
+select,input[type=text]{width:100%;background:var(--s2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;font-family:var(--sans);outline:none}
+select:focus,input[type=text]:focus{border-color:var(--teal)}
+.legend{padding:8px 12px;flex:1;overflow-y:auto}
+.legend-item{display:flex;align-items:center;gap:8px;padding:5px 4px;border-radius:4px;cursor:pointer;transition:background .12s}
+.legend-item:hover{background:var(--s2)}
+.legend-item.faded{opacity:.25}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.legend-name{font-size:12px;flex:1}
+.legend-count{font-family:var(--mono);font-size:11px;color:var(--muted)}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
+/* SCATTER */
+#scatter-view{flex:1;overflow:hidden;display:flex;flex-direction:column}
+#scatter-toolbar{padding:8px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
+#scatter-toolbar label{font-size:11px;color:var(--dim)}
+#scatter-container{flex:1;position:relative;overflow:hidden}
+#scatter-container svg{width:100%;height:100%}
+.scatter-dot{cursor:pointer;stroke:transparent;stroke-width:2;transition:opacity .1s}
+.scatter-dot:hover,.scatter-dot.selected{stroke:rgba(255,255,255,.8);stroke-width:1.5}
+.axis-label{font-family:var(--mono);font-size:10px;fill:var(--muted)}
+/* CHUNKS */
+#chunks-view{flex:1;display:none;flex-direction:column}
+#chunks-toolbar{padding:8px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
+#chunks-list{flex:1;overflow-y:auto;padding:8px}
+.chunk-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:11px 14px;margin-bottom:7px;cursor:pointer;transition:border-color .15s,background .12s}
+.chunk-card:hover{border-color:var(--teal);background:var(--s2)}
+.chunk-card.active{border-color:var(--teal);background:var(--teal2)}
+.cc-header{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.cc-type{font-family:var(--mono);font-size:9px;font-weight:700;padding:2px 7px;border-radius:3px;text-transform:uppercase;letter-spacing:.08em}
+.cc-branch{font-size:11px;color:var(--dim)}
+.cc-words{font-family:var(--mono);font-size:10px;color:var(--muted);margin-left:auto}
+.cc-title{font-size:12px;font-weight:600;margin-bottom:3px;color:var(--text)}
+.cc-preview{font-size:11px;color:var(--dim);line-height:1.5}
+#chunks-pager{padding:10px 14px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.pager-btn{padding:5px 12px;border-radius:6px;font-size:12px;border:1px solid var(--border);color:var(--dim);background:transparent;cursor:pointer;transition:all .15s}
+.pager-btn:hover:not(:disabled){border-color:var(--teal);color:var(--teal)}
+.pager-btn:disabled{opacity:.3;cursor:default}
+#pager-info{font-family:var(--mono);font-size:11px;color:var(--muted)}
+/* SEARCH */
+#search-view{flex:1;display:none;flex-direction:column}
+#search-form{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-shrink:0}
+#search-input{flex:1}
+#search-btn{padding:6px 16px;background:var(--teal);border:none;border-radius:6px;color:#060a10;font-weight:700;font-size:12px;cursor:pointer}
+#search-btn:hover{opacity:.85}
+#search-results{flex:1;overflow-y:auto;padding:8px}
+.sr-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:11px 14px;margin-bottom:7px;cursor:pointer;transition:border-color .15s}
+.sr-card:hover{border-color:var(--teal)}
+.sr-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.sr-rank{font-family:var(--mono);font-size:11px;font-weight:700;width:22px;height:22px;border-radius:50%;background:var(--s2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--dim)}
+.sr-score{font-family:var(--mono);font-size:13px;font-weight:700;margin-left:auto}
+.score-high{color:var(--green)}.score-mid{color:var(--amber)}.score-low{color:var(--rose)}
+.score-bar{height:3px;background:var(--border);border-radius:2px;margin-bottom:7px;overflow:hidden}
+.score-fill{height:100%;border-radius:2px;transition:width .4s}
+.sr-title{font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px}
+.sr-meta{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px}
+.meta-pill{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:3px;background:var(--s2);border:1px solid var(--border);color:var(--muted)}
+.sr-text{font-size:11px;color:var(--dim);line-height:1.6}
+/* DETAIL */
+#detail{width:330px;flex-shrink:0;border-left:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow:hidden}
+#detail.hidden{display:none}
+.detail-head{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.detail-title{font-family:var(--mono);font-size:10px;color:var(--teal);text-transform:uppercase;letter-spacing:.12em}
+.detail-close{background:none;border:none;color:var(--dim);cursor:pointer;font-size:16px;line-height:1;padding:0 4px}
+.detail-close:hover{color:var(--text)}
+#detail-body{flex:1;overflow-y:auto;padding:12px 14px}
+#detail-body::-webkit-scrollbar{width:4px}
+#detail-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.d-section{margin-bottom:13px}
+.d-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.d-value{font-family:var(--mono);font-size:11px;color:var(--text);word-break:break-all}
+.d-text{font-size:12px;color:var(--dim);line-height:1.7;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;white-space:pre-wrap;word-break:break-word;max-height:300px;overflow-y:auto}
+.d-badge{display:inline-block;font-family:var(--mono);font-size:10px;padding:3px 9px;border-radius:4px;background:rgba(255,255,255,.05);margin-bottom:3px}
+.d-url a{color:var(--teal);font-family:var(--mono);font-size:10px;word-break:break-all;text-decoration:none}
+.d-url a:hover{text-decoration:underline}
+/* TOOLTIP */
+#tooltip{position:fixed;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;max-width:280px;pointer-events:none;display:none;z-index:1000;box-shadow:0 8px 24px rgba(0,0,0,.6)}
+.tt-type{font-family:var(--mono);font-size:10px;margin-bottom:3px}
+.tt-title{font-size:12px;font-weight:600;color:var(--text);margin-bottom:5px}
+.tt-text{font-size:11px;color:var(--dim);line-height:1.5}
+/* LOADING */
+.loading{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:var(--muted)}
+.spinner{width:26px;height:26px;border:2px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <span class="tb-logo">⬡ ChromaDB Explorer</span>
+  <div class="tb-sep"></div>
+  <div class="tb-stat"><span class="tb-stat-val" id="stat-total">—</span><span class="tb-stat-lbl">Chunks</span></div>
+  <div class="tb-sep"></div>
+  <div class="tb-stat"><span class="tb-stat-val" id="stat-types">—</span><span class="tb-stat-lbl">Types</span></div>
+  <div class="tb-sep"></div>
+  <div class="tb-stat"><span class="tb-stat-val" id="stat-branches">—</span><span class="tb-stat-lbl">Branches</span></div>
+  <div class="tb-sep"></div>
+  <div class="tb-stat"><span class="tb-stat-val" id="stat-pca">—</span><span class="tb-stat-lbl">PCA Variance</span></div>
+  <div class="tb-tabs">
+    <button class="tab active" data-view="scatter">Embedding Space</button>
+    <button class="tab" data-view="chunks">Browse Chunks</button>
+    <button class="tab" data-view="search">Semantic Search</button>
+  </div>
+</div>
+
+<div id="layout">
+  <div id="left">
+    <div class="panel-head">Filters</div>
+    <div class="filter-section">
+      <div class="filter-label">Source Type</div>
+      <select id="filter-type"><option value="">All types</option></select>
+    </div>
+    <div class="filter-section">
+      <div class="filter-label">Branch</div>
+      <select id="filter-branch"><option value="">All branches</option></select>
+    </div>
+    <div class="panel-head" style="margin-top:4px">Legend</div>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div id="main">
+    <!-- SCATTER -->
+    <div id="scatter-view">
+      <div id="scatter-toolbar">
+        <label>Highlight:</label>
+        <input type="text" id="scatter-search" placeholder="filter by title or text…" style="width:200px">
+        <span style="font-size:11px;color:var(--muted);margin-left:auto" id="scatter-count"></span>
+        <span style="font-size:10px;color:var(--muted)">Scroll=zoom · Drag=pan · Click=detail</span>
+      </div>
+      <div id="scatter-container">
+        <div class="loading" id="scatter-loading">
+          <div class="spinner"></div>
+          <span>Loading embeddings and computing PCA…</span>
+        </div>
+        <svg id="scatter-svg" style="display:none"></svg>
+      </div>
+    </div>
+
+    <!-- CHUNKS -->
+    <div id="chunks-view">
+      <div id="chunks-toolbar">
+        <span style="font-size:11px;color:var(--dim)" id="chunks-count">Loading…</span>
+      </div>
+      <div id="chunks-list"></div>
+      <div id="chunks-pager">
+        <button class="pager-btn" id="prev-btn">← Prev</button>
+        <span id="pager-info">—</span>
+        <button class="pager-btn" id="next-btn">Next →</button>
+      </div>
+    </div>
+
+    <!-- SEARCH -->
+    <div id="search-view">
+      <div id="search-form">
+        <input type="text" id="search-input" placeholder="Type any patient query to see semantic similarity scores…">
+        <button id="search-btn">Search</button>
+      </div>
+      <div id="search-results">
+        <div class="loading" style="height:200px;display:flex">
+          <span style="color:var(--muted);font-size:12px">Enter a query to see retrieved chunks with similarity scores</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DETAIL -->
+  <div id="detail" class="hidden">
+    <div class="detail-head">
+      <span class="detail-title">Chunk Detail</span>
+      <button class="detail-close" id="detail-close">✕</button>
+    </div>
+    <div id="detail-body"></div>
+  </div>
+</div>
+
+<div id="tooltip">
+  <div class="tt-type" id="tt-type"></div>
+  <div class="tt-title" id="tt-title"></div>
+  <div class="tt-text" id="tt-text"></div>
+</div>
+
+<script>
+const API = window.location.origin + '/explore';
+
+const TYPE_COLORS = {
+  branch_page:'#00d4b8', doctor_profile:'#3b82f6',
+  speciality:'#22c55e',  package:'#f59e0b',
+  general:'#f43f5e',     unknown:'#3d5a7a',
+};
+const tc = t => TYPE_COLORS[t] || TYPE_COLORS.unknown;
+
+let statsData=null, scatterData=null, activeType=null, chunkOffset=0;
+const PAGE=30;
+
+(async()=>{
+  await loadStats();
+  buildLegend();
+  buildDropdowns();
+  switchView('scatter');
+  loadScatter();
+})();
+
+// ── Tabs
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    switchView(btn.dataset.view);
+  });
+});
+
+function switchView(v){
+  document.getElementById('scatter-view').style.display = v==='scatter'?'flex':'none';
+  document.getElementById('chunks-view').style.display  = v==='chunks' ?'flex':'none';
+  document.getElementById('search-view').style.display  = v==='search' ?'flex':'none';
+  if(v==='chunks') loadChunks(0);
+}
+
+function currentView(){
+  for(const t of document.querySelectorAll('.tab'))
+    if(t.classList.contains('active')) return t.dataset.view;
+  return 'scatter';
+}
+
+// ── Stats
+async function loadStats(){
+  const res=await fetch(`${API}/stats`);
+  statsData=await res.json();
+  document.getElementById('stat-total').textContent    = statsData.total_chunks.toLocaleString();
+  document.getElementById('stat-types').textContent    = Object.keys(statsData.source_types).length;
+  document.getElementById('stat-branches').textContent = Object.keys(statsData.top_branches).length;
+}
+
+function buildLegend(){
+  const leg=document.getElementById('legend');
+  leg.innerHTML='';
+  Object.entries(statsData.source_types).forEach(([type,count])=>{
+    const el=document.createElement('div');
+    el.className='legend-item';
+    el.dataset.type=type;
+    el.innerHTML=`<div class="legend-dot" style="background:${tc(type)}"></div>
+      <span class="legend-name ct-${type}">${type.replace('_',' ')}</span>
+      <span class="legend-count">${count}</span>`;
+    el.addEventListener('click',()=>toggleType(type));
+    leg.appendChild(el);
+  });
+}
+
+function toggleType(type){
+  activeType = activeType===type ? null : type;
+  document.querySelectorAll('.legend-item').forEach(el=>{
+    el.classList.toggle('faded', activeType!==null && el.dataset.type!==activeType);
+  });
+  if(scatterData) renderScatter(scatterData);
+}
+
+function buildDropdowns(){
+  const ts=document.getElementById('filter-type');
+  const bs=document.getElementById('filter-branch');
+  Object.keys(statsData.source_types).forEach(t=>{
+    const o=document.createElement('option');
+    o.value=t; o.textContent=t.replace('_',' ');
+    ts.appendChild(o);
+  });
+  Object.keys(statsData.top_branches).forEach(b=>{
+    const o=document.createElement('option');
+    o.value=b; o.textContent=b;
+    bs.appendChild(o);
+  });
+  ts.addEventListener('change',()=>{chunkOffset=0; if(currentView()==='chunks')loadChunks(0); if(scatterData)loadScatter();});
+  bs.addEventListener('change',()=>{chunkOffset=0; if(currentView()==='chunks')loadChunks(0);});
+}
+
+// ── Scatter
+async function loadScatter(){
+  document.getElementById('scatter-loading').style.display='flex';
+  document.getElementById('scatter-svg').style.display='none';
+  const tf=document.getElementById('filter-type').value;
+  const url=`${API}/embeddings?limit=600`+(tf?`&source_type=${encodeURIComponent(tf)}`:'');
+  const res=await fetch(url);
+  const data=await res.json();
+  scatterData=data;
+  const pct=(data.explained_variance*100).toFixed(1);
+  document.getElementById('stat-pca').textContent=pct+'%';
+  document.getElementById('scatter-loading').style.display='none';
+  document.getElementById('scatter-svg').style.display='block';
+  renderScatter(data);
+}
+
+function renderScatter(data){
+  const svg=document.getElementById('scatter-svg');
+  const W=svg.clientWidth||800, H=svg.clientHeight||600, PAD=44;
+  const pts=data.points;
+  const d3svg=d3.select('#scatter-svg');
+  d3svg.selectAll('*').remove();
+  if(!pts||!pts.length){
+    d3svg.append('text').attr('x',W/2).attr('y',H/2).attr('text-anchor','middle')
+      .attr('fill','#3d5a7a').text('No embedding data');
+    return;
+  }
+  const xE=d3.extent(pts,p=>p.x), yE=d3.extent(pts,p=>p.y);
+  const xS=d3.scaleLinear().domain(xE).range([PAD,W-PAD]);
+  const yS=d3.scaleLinear().domain(yE).range([H-PAD,PAD]);
+
+  const zoom=d3.zoom().scaleExtent([0.2,25]).on('zoom',e=>g.attr('transform',e.transform));
+  d3svg.call(zoom);
+  const g=d3svg.append('g');
+
+  // Grid
+  const gr=g.append('g');
+  for(let i=0;i<=4;i++){
+    const x=PAD+(W-2*PAD)*i/4;
+    gr.append('line').attr('x1',x).attr('y1',PAD).attr('x2',x).attr('y2',H-PAD)
+      .attr('stroke','#1a2d45').attr('stroke-width',0.5);
+    const y=PAD+(H-2*PAD)*i/4;
+    gr.append('line').attr('x1',PAD).attr('y1',y).attr('x2',W-PAD).attr('y2',y)
+      .attr('stroke','#1a2d45').attr('stroke-width',0.5);
+  }
+  g.append('text').attr('class','axis-label').attr('x',W/2).attr('y',H-6)
+    .attr('text-anchor','middle')
+    .text(`PCA Component 1  (${(data.explained_variance*60).toFixed(1)}% variance)`);
+  g.append('text').attr('class','axis-label')
+    .attr('transform',`translate(12,${H/2}) rotate(-90)`).attr('text-anchor','middle')
+    .text('PCA Component 2');
+
+  const tip=document.getElementById('tooltip');
+  const hl=document.getElementById('scatter-search').value.toLowerCase();
+
+  g.selectAll('.scatter-dot').data(pts).enter().append('circle')
+    .attr('class','scatter-dot')
+    .attr('cx',p=>xS(p.x)).attr('cy',p=>yS(p.y))
+    .attr('r',4)
+    .attr('fill',p=>tc(p.source_type))
+    .attr('opacity',p=>{
+      if(activeType && p.source_type!==activeType) return 0.06;
+      if(hl && !p.title.toLowerCase().includes(hl) && !p.text_preview.toLowerCase().includes(hl)) return 0.12;
+      return 0.72;
+    })
+    .on('mousemove',(ev,p)=>{
+      tip.style.display='block';
+      tip.style.left=(ev.clientX+12)+'px';
+      tip.style.top=(ev.clientY-10)+'px';
+      document.getElementById('tt-type').className='tt-type ct-'+p.source_type;
+      document.getElementById('tt-type').textContent=p.source_type.replace('_',' ');
+      document.getElementById('tt-title').textContent=p.title||'—';
+      document.getElementById('tt-text').textContent=(p.text_preview||'').slice(0,120);
+    })
+    .on('mouseleave',()=>{ tip.style.display='none'; })
+    .on('click',(ev,p)=>{
+      d3svg.selectAll('.scatter-dot').classed('selected',false);
+      d3.select(ev.target).classed('selected',true);
+      showDetail(p);
+    });
+
+  document.getElementById('scatter-count').textContent=
+    `${pts.length.toLocaleString()} points`+(activeType?` · ${activeType}`:'');
+}
+
+document.getElementById('scatter-search').addEventListener('input',()=>{
+  if(scatterData) renderScatter(scatterData);
+});
+
+let resizeT;
+window.addEventListener('resize',()=>{
+  clearTimeout(resizeT);
+  resizeT=setTimeout(()=>{if(scatterData)renderScatter(scatterData);},150);
+});
+
+// ── Chunks
+async function loadChunks(offset){
+  chunkOffset=offset;
+  const tf=document.getElementById('filter-type').value;
+  const bf=document.getElementById('filter-branch').value;
+  let url=`${API}/chunks?limit=${PAGE}&offset=${offset}`;
+  if(tf) url+=`&source_type=${encodeURIComponent(tf)}`;
+  if(bf) url+=`&branch=${encodeURIComponent(bf)}`;
+  const res=await fetch(url);
+  const data=await res.json();
+  document.getElementById('chunks-count').textContent=
+    `${data.count} chunks · page ${Math.floor(offset/PAGE)+1}`;
+  const list=document.getElementById('chunks-list');
+  list.innerHTML='';
+  data.chunks.forEach(ch=>{
+    const col=tc(ch.source_type);
+    const card=document.createElement('div');
+    card.className='chunk-card';
+    card.innerHTML=`
+      <div class="cc-header">
+        <span class="cc-type" style="background:${col}22;border:1px solid ${col}44;color:${col}">${ch.source_type.replace('_',' ')}</span>
+        ${ch.branch&&ch.branch!=='all'?`<span class="cc-branch">${ch.branch}</span>`:''}
+        <span class="cc-words">${ch.word_count}w</span>
+      </div>
+      <div class="cc-title">${ch.title||ch.id}</div>
+      <div class="cc-preview">${ch.text_preview}${ch.text_preview.length>=180?'…':''}</div>`;
+    card.addEventListener('click',()=>{
+      document.querySelectorAll('.chunk-card').forEach(c=>c.classList.remove('active'));
+      card.classList.add('active');
+      showDetail(ch);
+    });
+    list.appendChild(card);
+  });
+  document.getElementById('prev-btn').disabled=offset===0;
+  document.getElementById('next-btn').disabled=data.count<PAGE;
+  document.getElementById('pager-info').textContent=`${offset+1}–${offset+data.count}`;
+}
+
+document.getElementById('prev-btn').addEventListener('click',()=>loadChunks(Math.max(0,chunkOffset-PAGE)));
+document.getElementById('next-btn').addEventListener('click',()=>loadChunks(chunkOffset+PAGE));
+
+// ── Search
+document.getElementById('search-btn').addEventListener('click',runSearch);
+document.getElementById('search-input').addEventListener('keydown',e=>{ if(e.key==='Enter') runSearch(); });
+
+async function runSearch(){
+  const q=document.getElementById('search-input').value.trim();
+  if(!q) return;
+  const tf=document.getElementById('filter-type').value;
+  const bf=document.getElementById('filter-branch').value;
+  const el=document.getElementById('search-results');
+  el.innerHTML='<div class="loading" style="height:120px;display:flex"><div class="spinner"></div></div>';
+  const body={query:q,top_k:12};
+  if(tf) body.source_types=[tf];
+  if(bf) body.branch=bf;
+  const res=await fetch(`${API}/search`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const data=await res.json();
+  el.innerHTML='';
+  if(!data.results.length){
+    el.innerHTML='<div class="loading" style="height:80px;display:flex"><span>No results</span></div>';
+    return;
+  }
+  data.results.forEach(r=>{
+    const sc=r.score>=0.7?'score-high':r.score>=0.45?'score-mid':'score-low';
+    const scol=r.score>=0.7?'#22c55e':r.score>=0.45?'#f59e0b':'#f43f5e';
+    const col=tc(r.source_type);
+    const card=document.createElement('div');
+    card.className='sr-card';
+    card.innerHTML=`
+      <div class="sr-header">
+        <div class="sr-rank">${r.rank}</div>
+        <span class="cc-type" style="background:${col}22;border:1px solid ${col}44;color:${col}">${r.source_type.replace('_',' ')}</span>
+        <span class="sr-score ${sc}">${(r.score*100).toFixed(1)}%</span>
+      </div>
+      <div class="score-bar"><div class="score-fill" style="width:${r.score*100}%;background:${scol}"></div></div>
+      <div class="sr-title">${r.title||r.id}</div>
+      <div class="sr-meta">
+        ${r.branch&&r.branch!=='all'?`<span class="meta-pill">branch: ${r.branch}</span>`:''}
+        ${r.speciality&&r.speciality!=='none'?`<span class="meta-pill">spec: ${r.speciality}</span>`:''}
+        ${r.doctor_name&&r.doctor_name!=='none'?`<span class="meta-pill">dr: ${r.doctor_name}</span>`:''}
+        <span class="meta-pill">${r.word_count}w</span>
+        <span class="meta-pill">dist: ${r.distance.toFixed(4)}</span>
+      </div>
+      <div class="sr-text">${r.text_preview}${r.text_preview.length>=200?'…':''}</div>`;
+    card.addEventListener('click',()=>showDetail(r));
+    el.appendChild(card);
+  });
+}
+
+// ── Detail
+function showDetail(ch){
+  document.getElementById('detail').classList.remove('hidden');
+  const col=tc(ch.source_type||'unknown');
+  document.getElementById('detail-body').innerHTML=`
+    <div class="d-section">
+      <div class="d-label">Source Type</div>
+      <span class="d-badge" style="background:${col}22;border:1px solid ${col}44;color:${col}">${(ch.source_type||'unknown').replace('_',' ')}</span>
+    </div>
+    <div class="d-section">
+      <div class="d-label">Title</div>
+      <div class="d-value">${ch.title||'—'}</div>
+    </div>
+    ${ch.branch&&ch.branch!=='all'&&ch.branch!=='none'?`<div class="d-section"><div class="d-label">Branch</div><div class="d-value ct-branch_page">${ch.branch}</div></div>`:''}
+    ${ch.speciality&&ch.speciality!=='none'&&ch.speciality!=='all'?`<div class="d-section"><div class="d-label">Speciality</div><div class="d-value ct-speciality">${ch.speciality}</div></div>`:''}
+    ${ch.doctor_name&&ch.doctor_name!=='none'?`<div class="d-section"><div class="d-label">Doctor</div><div class="d-value ct-doctor_profile">${ch.doctor_name}</div></div>`:''}
+    ${ch.score!==undefined?`<div class="d-section"><div class="d-label">Similarity Score</div><div class="d-value" style="color:${ch.score>=0.7?'#22c55e':ch.score>=0.45?'#f59e0b':'#f43f5e'};font-size:18px;font-weight:700">${(ch.score*100).toFixed(2)}%</div></div>`:''}
+    ${ch.id?`<div class="d-section"><div class="d-label">Chunk ID</div><div class="d-value" style="font-size:10px;color:var(--muted)">${ch.id}</div></div>`:''}
+    ${ch.url?`<div class="d-section"><div class="d-label">Source URL</div><div class="d-url"><a href="${ch.url}" target="_blank">${ch.url}</a></div></div>`:''}
+    <div class="d-section">
+      <div class="d-label">Full Text</div>
+      <div class="d-text">${(ch.text||ch.text_preview||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+    </div>
+    ${ch.word_count!==undefined?`<div class="d-section"><div class="d-label">Word Count</div><div class="d-value">${ch.word_count} words</div></div>`:''}
+  `;
+}
+
+document.getElementById('detail-close').addEventListener('click',()=>{
+  document.getElementById('detail').classList.add('hidden');
+});
+</script>
+</body>
+</html>
